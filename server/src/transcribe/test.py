@@ -10,8 +10,7 @@ from six.moves.urllib.request import urlopen
 def main():
     if len(sys.argv) != 2:
         return
-    file_url = str(sys.argv[1])
-
+    url = str(sys.argv[1])
     data, sr = sf.read(io.BytesIO(urlopen(url).read()))
     filename = 'violin2.wav'
     # x, sr = librosa.load(filename)
@@ -34,13 +33,14 @@ def main():
 
     onset_times = librosa.samples_to_time(onset_boundaries, sr=sr)
 
-    z = numpy.array([
+    # return a JSON object
+    result = ([
         estimate_pitch_and_duration(x, onset_boundaries, i, sr=sr)
         for i in range(len(onset_boundaries)-1)
     ])
 
-    print(z)
-    return z
+    print(result)
+    return result
 
 def estimate_pitch(segment, sr, fmin=500.0, fmax=2000.0):
     
@@ -63,7 +63,7 @@ def estimate_pitch_and_duration(x, onset_samples, i, sr):
     f0 = estimate_pitch(x[n0:n1], sr)
     duration = (n1-n0)/sr
     # return [librosa.hz_to_note(f0), f0, round(duration, 2)]
-    return [round(n0/sr, 2), librosa.hz_to_note(f0), round(duration, 2)]
+    return {'onset': round(n0/sr, 2), 'note' : librosa.hz_to_note(f0), 'duration': round(duration, 2)}
 
 
 if __name__ == "__main__":
