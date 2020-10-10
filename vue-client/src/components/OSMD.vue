@@ -1,4 +1,3 @@
-/* eslint-disable */
 <template lang="pug">
   #score
     //- div.ma-0#score(ref="scorediv" v-show="!scoreLoading" style="height:130px; overflow:hidden;")

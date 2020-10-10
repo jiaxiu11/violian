@@ -534,50 +534,6 @@ Vex.UI.Handler.prototype.importNotes = function(notes, timeSignature) {
 	}
 };
 
-Vex.UI.Handler.prototype.notesToBars = function (notes, timeSignature) {
-	if (notes && timeSignature) {
-		var tickables = []
-		var barNum = 0
-		var barDuration = eval(timeSignature)
-		var accumDuration = 0
-		var notesInBars = []
-	
-		for (var i = 0; i < notes.length; i++) {
-			var noteArr = notes[i].split('/')
-			var dur = noteArr[2]
-			var isDot = false
-			if (dur.includes("r")) {
-				dur = dur.replace("r", "");
-			}
-			if (dur.includes("d")) {
-				dur = dur.replace("d", "");
-				isDot = true;
-			}
-
-			dur = 1 / parseInt(dur)
-			if (isDot) {
-				dur = dur * 1.5
-			}
-
-			accumDuration += dur
-			tickables.push(notes[i])
-	
-			if (accumDuration == barDuration) {
-				notesInBars.push(tickables)
-				tickables = []
-				barNum++
-				accumDuration = 0
-			}
-		}
-		
-		if (tickables.length > 0 && barNum + 1 < this.options.numberOfStaves) {
-			notesInBars.push(tickables)
-		}
-
-		return notesInBars
-	}
-}
-
 Vex.UI.Handler.prototype.changeBars = function(newNumBars) {
 	//console.log("newBar", newNumBars);
 	if (newNumBars > this.numBars) {
@@ -2310,4 +2266,48 @@ Vex.UI.TickableType = {
 	CLEF : "clef"
 };
 
+// Vex Utils
+Vex.UI.notesToBars = function (notes, timeSignature) {
+	if (notes && timeSignature) {
+		var tickables = []
+		var barNum = 0
+		var barDuration = eval(timeSignature)
+		var accumDuration = 0
+		var notesInBars = []
+	
+		for (var i = 0; i < notes.length; i++) {
+			var noteArr = notes[i].split('/')
+			var dur = noteArr[2]
+			var isDot = false
+			if (dur.includes("r")) {
+				dur = dur.replace("r", "");
+			}
+			if (dur.includes("d")) {
+				dur = dur.replace("d", "");
+				isDot = true;
+			}
+
+			dur = 1 / parseInt(dur)
+			if (isDot) {
+				dur = dur * 1.5
+			}
+
+			accumDuration += dur
+			tickables.push(notes[i])
+	
+			if (accumDuration == barDuration) {
+				notesInBars.push(tickables)
+				tickables = []
+				barNum++
+				accumDuration = 0
+			}
+		}
+		
+		if (tickables.length > 0 && barNum + 1 < this.options.numberOfStaves) {
+			notesInBars.push(tickables)
+		}
+
+		return notesInBars
+	}
+}
 export default Vex.UI

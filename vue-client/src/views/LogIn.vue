@@ -60,6 +60,7 @@ export default {
       loading: false
     }
   },
+
   methods: {
     async login () {
       if (!this.$refs.form.validate())
