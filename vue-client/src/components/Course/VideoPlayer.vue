@@ -187,7 +187,7 @@ export default {
         }
       }, wrapper).init();
       
-      this.notesInBars = this.videoHandler.notesToBars(this.melody, this.timeSignature)
+      this.notesInBars = vexUI.notesToBars(this.melody, this.timeSignature)
       this.videoHandler.importNotes(this.notesInBars[0].concat(this.notesInBars[1])  , this.timeSignature)
 
       document.getElementById(`video`).appendChild(wrapper)
