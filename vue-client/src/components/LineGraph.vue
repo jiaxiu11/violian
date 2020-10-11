@@ -11,7 +11,7 @@ export default {
   components: {
     Plotly
   },
-  props: ['transcribedNotes', 'width'],
+  props: ["transcribedNotes", "width"],
   data() {
     return {
       minNoteNumber: "C3",
@@ -20,15 +20,12 @@ export default {
       timeSignature: 4,
       barsPerRow: 4,
       secondsPerRow: this.getSecondsPerRow(),
-      graphs: [],
+      graphs: []
     };
   },
   methods: {
     getSecondsPerRow() {
-      let timeSignature = 4;
-      let bpm = 60;
-      let barsPerRow = 4;
-      return (60 / bpm) * timeSignature * barsPerRow;
+      return (60 / this.bpm) * this.timeSignature * this.barsPerRow;
     },
     getNumberFromMusicNote(noteNumber) {
       let octave = noteNumber[1] - "0";
@@ -94,19 +91,49 @@ export default {
     },
     getTickValsForRow(rowIndex) {
       let ticks = [];
-      for (let i = 0; i <= this.barsPerRow; i++) {
+      for (let i = 0; i <= this.barsPerRow * this.timeSignature; i++) {
         ticks.push(i);
       }
-      return ticks.map(tick => tick * 4 + rowIndex * this.secondsPerRow);
+      return ticks.map(
+        tick => tick + rowIndex * this.barsPerRow * this.timeSignature
+      );
     },
     getAnnotationXValsForNotes(notes) {
       return notes.map(note => note.onset + note.duration / 2);
     },
     getAnnotationYValsForNotes(notes) {
-      return notes.map(note => this.getLineSegmentYValForMusicNote(note) + 0.3);
+      return notes.map(note => {
+        let yVal = this.getLineSegmentYValForMusicNote(note) + 0.3;
+        return yVal <= this.maxNoteNumber[1] - this.minNoteNumber[1]
+          ? yVal
+          : yVal - 0.7;
+      });
     },
     getAnnotationsForNotes(notes) {
       return notes.map(note => note.noteNumber);
+    },
+    getBarDividers(rowIndex) {
+      let y0 = 0;
+      let y1 = this.maxNoteNumber[1] - this.minNoteNumber[1];
+      let barDividers = [];
+      for (let i = 1; i <= this.barsPerRow; i++) {
+        let x =
+          i * this.timeSignature +
+          rowIndex * this.timeSignature * this.barsPerRow;
+        let divider = {
+          type: "line",
+          x0: x,
+          y0: y0,
+          x1: x,
+          y1: y1,
+          line: {
+            color: "#bdbdbd",
+            width: 2
+          }
+        };
+        barDividers.push(divider);
+      }
+      return barDividers;
     },
     getGraphsForNotes(notes) {
       let rows = this.splitIntoRows(notes);
@@ -125,18 +152,19 @@ export default {
           layout: {
             xaxis: {
               zeroline: false,
-              range: [i * this.secondsPerRow, (i + 1) * this.secondsPerRow],
+              range: [
+                i * this.secondsPerRow,
+                (i + 1) * this.secondsPerRow + 0.1
+              ],
               tickvals: this.getTickValsForRow(i),
               tickfont: {
                 family: "Old Standard TT, serif",
                 size: 10,
                 color: "Brown"
-              },
-              gridcolor: "#bdbdbd",
-              gridwidth: 3
+              }
             },
             yaxis: {
-              range: [0, 3],
+              range: [0, 3.1],
               tickvals: [0, 1, 2, 3],
               ticktext: ["C3", "C4", "C5", "C6"],
               tickfont: {
@@ -153,7 +181,9 @@ export default {
               t: 20,
               pad: 8
             },
-            shapes: row.map(note => this.getLineSegmentForMusicNote(note))
+            shapes: row
+              .map(note => this.getLineSegmentForMusicNote(note))
+              .concat(this.getBarDividers(i))
           }
         };
         graphs.push(graph);
