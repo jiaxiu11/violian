@@ -28,8 +28,10 @@
                         v-btn(color="#ec5252" dark @click="getFeedback()" style="margin-top: 2px;") Submit
 
                     v-row.justify-center
-                      v-col(cols="12")
-                        div(v-for="(part, idx) in scoreParts" :id="`vexflow-wrapper-${idx}`" :key="idx")
+                      v-col.py-0(cols="12")
+                        div(v-for="(part, idx) in scoreParts" :key="idx")
+                          div(:id="`vexflow-wrapper-${idx}`")
+                          line-graph(:transcribedNotes="transcribedNotes")
 
         v-col.pa-0(cols="3" style="border-bottom: 1px solid #BDBDBD; border-left: 1px solid #BDBDBD; position: fixed; right:0;" :class="{ 'full-height': fullHeight, 'partial-height': !fullHeight }")
           h1.font-weight-bold.pl-4.py-2(style="background-color:#EEEEEE;") Lessons
@@ -53,6 +55,7 @@
 
 <script>
 /* eslint-disable */
+import LineGraph from "../LineGraph";
 import vexUI from "@/plugins/vex";
 import { mapState } from "vuex";
 import utils from "@/utils";
@@ -69,7 +72,8 @@ import _ from 'lodash'
 export default {
   name: 'ShowLesson',
   components: {
-    'video-player': VideoPlayer
+    'video-player': VideoPlayer,
+    'line-graph': LineGraph
   },
   data () {
     return {
@@ -114,7 +118,60 @@ export default {
 
       // tabs
       tab: null,
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+
+      // line graph
+      transcribedNotes: [
+        {
+          onset: 0.0,
+          noteNumber: "B5",
+          duration: 1
+        },
+        {
+          onset: 1,
+          noteNumber: "C5",
+          duration: 0.5
+        },
+        {
+          onset: 1.5,
+          noteNumber: "C5",
+          duration: 0.5
+        },
+        {
+          onset: 2,
+          noteNumber: "D5",
+          duration: 0.5
+        },
+        {
+          onset: 2.5,
+          noteNumber: "D5",
+          duration: 0.5
+        },
+        {
+          onset: 3,
+          noteNumber: "E5",
+          duration: 1
+        },
+        {
+          onset: 4,
+          noteNumber: "E5",
+          duration: 1
+        },
+        {
+          onset: 5,
+          noteNumber: "A4",
+          duration: 1
+        },
+        {
+          onset: 6,
+          noteNumber: "A4",
+          duration: 1
+        },
+        {
+          onset: 7,
+          noteNumber: "E4",
+          duration: 1
+        },
+      ],
     }
   },
   watch: {
@@ -222,8 +279,8 @@ export default {
     if (this.currEx.useScore) {
       this.notesInBars = vexUI.notesToBars(this.currEx.melody, this.currEx.timeSignature)
     
-      for (let i = 0; i < this.notesInBars.length; i += 2) {
-        this.scoreParts.push(this.notesInBars.slice(i, i + 2).flat())
+      for (let i = 0; i < this.notesInBars.length; i += 4) {
+        this.scoreParts.push(this.notesInBars.slice(i, i + 4).flat())
       }
 
       await this.$nextTick()
@@ -232,7 +289,8 @@ export default {
       var width = wrapper.offsetWidth;
       for (let i = 0; i < this.scoreParts.length; i++) {
         this.handlers.push(new vexUI.Handler(`vexflow-wrapper-${i}`, {
-          numberOfStaves: 2,
+          numberOfStaves: 4,
+          stavesPerRow: 4,
           canEdit: false,
           canvasProperties: {
             width

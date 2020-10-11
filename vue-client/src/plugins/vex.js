@@ -13,7 +13,7 @@ const VF = Vex.Flow;
 Vex.UI.provisoryTickableStyle = {shadowBlur:0, shadowColor:'gray', fillStyle:'gray', strokeStyle:'gray'}; 
 Vex.UI.highlightNoteStyle = {shadowBlur:15, shadowColor:'red', fillStyle:'black', strokeStyle:'black'};
 Vex.UI.defaultNoteStyle = {shadowBlur:0, shadowColor:'black', fillStyle:'black', strokeStyle:'black'};
-Vex.UI.scale = 1.5;
+Vex.UI.scale = 1.0;
 
 Vex.UI.Handler = function (containerId, options, DOMNode){
 	if (DOMNode) {
@@ -30,6 +30,7 @@ Vex.UI.Handler = function (containerId, options, DOMNode){
 		canChangeNoteValue: true,
 		showToolbar: true,
 		numberOfStaves: 4,
+		stavesPerRow: 2,
 		lessStaveHeight: false,
 		canvasProperties: {
 			id: containerId + "-canvas",
@@ -79,7 +80,7 @@ Vex.UI.Handler.prototype.createCanvas = function() {
 	if (this.options.lessStaveHeight) {
 		canvas.height = 90 * Vex.UI.scale;
 	} else {
-		canvas.height = 130 * Math.ceil(this.options.numberOfStaves / 2) * Vex.UI.scale;
+		canvas.height = 130 * Math.ceil(this.options.numberOfStaves / this.options.stavesPerRow) * Vex.UI.scale;
 	}
 	this.container.appendChild(canvas);
 
@@ -89,23 +90,28 @@ Vex.UI.Handler.prototype.createCanvas = function() {
 Vex.UI.Handler.prototype.createStaves = function() {
 	var staveList = [];
 	var yPosition = 0;
+	var xPosition = 10;
 	if (this.options.lessStaveHeight) 
 		yPosition = -20;
-	var widthOfStave = (this.canvas.width / Vex.UI.scale - 20) / 2
+	var widthOfStave = (this.canvas.width / Vex.UI.scale - 20) / this.options.stavesPerRow
 	for(var i = 0; i < this.options.numberOfStaves; i++){
-		//TODO make stave position more dinamic
+		//TODO make stave position more dynamic
 		var stave = {};
-		if ((i + 1) % 2 == 0) {
-			stave = new Vex.Flow.Stave(10 + widthOfStave, yPosition, widthOfStave);
+		if ((i + 1) % this.options.stavesPerRow == 0) {
+			stave = new Vex.Flow.Stave(xPosition, yPosition, widthOfStave);
 			yPosition += 130;
+			xPosition = 10
 		} else {
-			stave = new Vex.Flow.Stave(10, yPosition, widthOfStave);
+			stave = new Vex.Flow.Stave(xPosition, yPosition, widthOfStave);
+			xPosition += widthOfStave
+		}
+		if (i % this.options.stavesPerRow == 0) {
 			stave.addClef("treble").addTimeSignature('4/4');
 		}
 		stave.font = {
-      family: 'sans-serif',
-      size: 12,
-      weight: '',
+			family: 'sans-serif',
+			size: 12,
+			weight: '',
 		};
 		staveList.push(stave);
 		stave.setContext(this.ctx);
