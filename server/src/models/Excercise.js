@@ -26,6 +26,10 @@ module.exports = (sequelize, DataTypes) => {
 
   Exercise.associate = function (models) {
     Exercise.belongsTo(models.Lesson)
+    Exercise.hasMany(models.Recording, {
+      onDelete: 'CASCADE',
+      hooks: true
+    })
   }
 
   Exercise.beforeDestroy(async (exercise, options) => {
