@@ -101,6 +101,7 @@ module.exports = (app) => {
     ),
     app.get("/recording/list", isAuthenticated, RecordingController.list),
     app.delete("/recording/del", isAuthenticated, RecordingController.destroy),
+    app.get("/recording/get-notes", isAuthenticated, RecordingController.getTranscribedNotes),
     // subscription management
     app.post(
       "/subscribe/new",

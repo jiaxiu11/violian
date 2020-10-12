@@ -5,6 +5,7 @@ const { Course } = require("../models");
 const AWS = require("aws-sdk");
 const config = require("../config/config");
 const { sequelize } = require("../models");
+const transcribe = require("../transcription/transcribe");
 
 const s3 = new AWS.S3({
   accessKeyId: config.aws.id,
@@ -46,10 +47,8 @@ module.exports = {
             Body: req.file.buffer,
           };
 
-          console.log(params.Key);
           // Uploading audio file to the bucket
           const response = await s3.upload(params).promise();
-          console.log(req.body);
           req.body.audioUrl = response.Location;
           req.body.audioFilename = req.file.originalname;
         }
@@ -129,6 +128,54 @@ module.exports = {
       console.log(err);
       res.status(500).send({
         error: "An error has occured in trying to delete recording",
+      });
+    }
+  },
+
+  async getTranscribedNotes(req, res) {
+    try {
+      await sequelize.transaction(async (t) => {
+        const { rid } = req.query;
+        const recording = await Recording.findOne({
+          where: {
+            id: rid,
+          },
+        });
+
+        if (!recording) {
+          return res.status(403).send({
+            error: "Recording information is incorrect",
+          });
+        }
+
+        if (!recording.transcription) {
+          const transcriptionResponse = await transcribe.transcribe(
+            recording.audioUrl
+          );
+
+          if (!transcriptionResponse.success) {
+            throw new Error("Transcription failed");
+          }
+
+          recording.transcription = transcriptionResponse.transcribed_notes;
+
+          await Recording.update(recording.dataValues, {
+            where: {
+              id: rid,
+            },
+            transaction: t,
+          });
+        }
+
+        await recording.reload().dataValues;
+        res.send({
+          recording: recording.toJSON(),
+        });
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(500).send({
+        error: "An error has occured in trying to get transcribed notes",
       });
     }
   },
