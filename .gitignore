@@ -6,3 +6,4 @@ server/*.sql
 archived-code/
 .vscode/
 .env.local
+.idea
