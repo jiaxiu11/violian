@@ -34,7 +34,7 @@
                             v-btn(light v-bind='attrs' v-on='on') Past Submissions
                               v-icon(right dark) mdi-menu-down
                           v-list
-                            v-list-item(v-for='(recording, index) in recordings' :key='index' @click="transcribedNotes = splitFeedbackIntoRows(JSON.parse(recording.transcription))")
+                            v-list-item(v-for='(recording, index) in recordings' :key='index' @click="transcribedNotes = splitFeedbackIntoRows(JSON.parse(recording.transcription)); audioSrc = recording.audioUrl")
                               v-list-item-title {{ recording.audioFilename }}
 
                     v-row.justify-center
@@ -82,9 +82,7 @@
                 a.link.pl-4.py-5(style="font-size: 16px;" @click="goToLesson($event, currLesson)") {{ lessonIdx + 1 }}. {{ currLesson.name }}
 
     //- Tutor audio file
-    audio(ref="tutorAudio" @timeupdate="tutorAudioTimeUpdate")
-      source(src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="audio/ogg")
-      | Your browser does not support the audio tag.
+    audio(ref="tutorAudio" @timeupdate="tutorAudioTimeUpdate" :src="audioSrc" type="audio/ogg")
 </template>
 
 <script>
@@ -131,6 +129,7 @@ export default {
       moving: false,
       playing: false,
       recordings: [],
+      audioSrc: '',
 
       // thread info
       thread: null,
