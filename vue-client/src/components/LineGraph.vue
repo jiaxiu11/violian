@@ -7,19 +7,25 @@
 <script>
 import { Plotly } from "vue-plotly";
 export default {
-  name: "AutoEvaluation",
+  name: "LineGraph",
   components: {
     Plotly
   },
-  props: ["transcribedNotes", "width"],
+  props: ["transcribedNotes", "rowNum", "bpm"],
+  watch: {
+    transcribedNotes: function (val) {
+      console.log(val)
+      this.graphs = this.getGraphsForNotes(val);
+    }
+  },
+
   data() {
     return {
       minNoteNumber: "C3",
       maxNoteNumber: "C6",
-      bpm: 60,
       timeSignature: 4,
       barsPerRow: 4,
-      secondsPerRow: this.getSecondsPerRow(),
+      secondsPerRow: 0,
       graphs: []
     };
   },
@@ -28,7 +34,11 @@ export default {
       return (60 / this.bpm) * this.timeSignature * this.barsPerRow;
     },
     getNumberFromMusicNote(noteNumber) {
-      let octave = noteNumber[1] - "0";
+      let octave = 0;
+      if (noteNumber.length > 2)
+        octave = noteNumber[noteNumber.length - 1] - "0";
+      else
+        octave = noteNumber[1] - "0";
       let note = noteNumber[0].charCodeAt(0) - "C".charCodeAt(0);
       if (note < 0) {
         note = note + 8;
@@ -52,7 +62,7 @@ export default {
     getLineSegmentYValForMusicNote(note) {
       let minY = this.getNumberFromMusicNote(this.minNoteNumber);
       let maxY = this.getNumberFromMusicNote(this.maxNoteNumber);
-      let y = this.getNumberFromMusicNote(note.noteNumber);
+      let y = this.getNumberFromMusicNote(note.note);
       return (
         ((y - minY) / (maxY - minY)) *
         (this.maxNoteNumber[1] - this.minNoteNumber[1])
@@ -110,7 +120,7 @@ export default {
       });
     },
     getAnnotationsForNotes(notes) {
-      return notes.map(note => note.noteNumber);
+      return notes.map(note => note.note);
     },
     getBarDividers(rowIndex) {
       let y0 = 0;
@@ -191,9 +201,11 @@ export default {
       return graphs;
     }
   },
-  created() {
-    this.graphs = this.getGraphsForNotes(this.transcribedNotes);
-  }
+  async mounted() {
+    this.secondsPerRow = this.getSecondsPerRow();
+    if (this.transcribedNotes.length > 0)
+      this.graphs = this.getGraphsForNotes(this.transcribedNotes);
+  },
 };
 </script>
 

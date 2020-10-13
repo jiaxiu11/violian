@@ -45,7 +45,7 @@ def main():
     except Exception as e:
         print(json.dumps({'success': 0, 'error': str(e)}))
 
-def estimate_pitch(segment, sr, fmin=500.0, fmax=2000.0):
+def estimate_pitch(segment, sr, fmin=200.0, fmax=2000.0):
     
     # Compute autocorrelation of input segment.
     r = librosa.autocorrelate(segment)
