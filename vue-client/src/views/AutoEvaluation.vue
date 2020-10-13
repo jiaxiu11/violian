@@ -296,7 +296,7 @@ export default {
   },
   created() {
     this.graphs = this.getGraphsForNotes(this.transcribedNotes);
-  }
+  },
 };
 </script>
 

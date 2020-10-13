@@ -40,6 +40,7 @@ module.exports = {
           });
         }
 
+        console.log(req.file)
         if (req.file) {
           let params = {
             Bucket: config.aws.bucket,
@@ -51,17 +52,20 @@ module.exports = {
           const response = await s3.upload(params).promise();
           req.body.audioUrl = response.Location;
           req.body.audioFilename = req.file.originalname;
+
+          const recording = await exercise.createRecording(req.body, {
+            transaction: t,
+          });
+          await recording.setExercise(exercise);
+  
+          res.send({
+            recording: recording.toJSON(),
+          });
+        } else {
+          res.status(403).send({
+            error: "No file found"
+          });
         }
-
-        // console.log(req.body);
-        const recording = await exercise.createRecording(req.body, {
-          transaction: t,
-        });
-        await recording.setExercise(exercise);
-
-        res.send({
-          recording: recording.toJSON(),
-        });
       });
     } catch (err) {
       console.log(err);
@@ -153,6 +157,7 @@ module.exports = {
             recording.audioUrl
           );
 
+          console.log(transcriptionResponse)
           if (!transcriptionResponse.success) {
             throw new Error("Transcription failed");
           }

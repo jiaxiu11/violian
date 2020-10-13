@@ -92,6 +92,7 @@ module.exports = (app) => {
     ),
     app.get("/exercise/list", isAuthenticated, ExerciseController.list),
     app.delete("/exercise/del", isAuthenticated, ExerciseController.destroy),
+
     // recording management
     app.post(
       "/recording/new",
@@ -102,6 +103,7 @@ module.exports = (app) => {
     app.get("/recording/list", isAuthenticated, RecordingController.list),
     app.delete("/recording/del", isAuthenticated, RecordingController.destroy),
     app.get("/recording/get-notes", isAuthenticated, RecordingController.getTranscribedNotes),
+    
     // subscription management
     app.post(
       "/subscribe/new",
