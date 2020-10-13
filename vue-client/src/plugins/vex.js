@@ -350,7 +350,6 @@ Vex.UI.Handler.prototype.updateProvisoryType = function(newType){
 Vex.UI.Handler.prototype.drawProvisoryTickable = function(mousePos){
 	
 	if(this.provisoryTickable && this.currentStave!=null){
-		//console.log('hey----------', this.provisoryTickable)
 		this.redrawStave(this.currentStave);
 		if(mousePos!==undefined){
 			if(this.provisoryTickable instanceof Vex.Flow.StaveNote){
@@ -541,7 +540,6 @@ Vex.UI.Handler.prototype.importNotes = function(notes, timeSignature) {
 };
 
 Vex.UI.Handler.prototype.changeBars = function(newNumBars) {
-	//console.log("newBar", newNumBars);
 	if (newNumBars > this.numBars) {
 		for (var j = this.numBars; j < newNumBars; j ++) {
 			this.staveList[j].setTickables([]);
@@ -595,7 +593,6 @@ Vex.UI.Handler.prototype.highlightNote = function(idx) {
 };
 
 Vex.UI.Handler.prototype.changeNumberOfBars = function (newNumberOfBars, notes) {
-	console.log('called')
 	this.container.removeChild(this.container.lastElementChild);
 	//Merge options with default options
 	var options = {
@@ -897,7 +894,6 @@ Vex.UI.NoteMenu.prototype.addDoubleSharp = function(){
 };
 
 Vex.UI.NoteMenu.prototype.addDot = function(){
-	console.log('got here')
 	this.handler.addDotToNote(this.note);
 	this.close();
 };
@@ -1572,7 +1568,6 @@ Vex.Flow.StaveNote.prototype.change = function(action){
 Vex.Flow.StaveNote.prototype.drawFlag = function(){
 	if (!this.context) throw new Vex.RERR("NoCanvasContext",
 	"Can't draw without a canvas context.");
-	//console.log('drawflag called')
 	var ctx = this.context;
 	var glyph = this.getGlyph();
 	var render_flag = this.beam === null;
@@ -2273,6 +2268,13 @@ Vex.UI.TickableType = {
 };
 
 // Vex Utils
+
+Vex.UI.Handler.prototype.getNotePositions = function () {
+	var staves = this.staveList;
+	return staves.map(stave => stave.getTickables().map(tickable => tickable.getBoundingBox()))
+}
+
+// convert a flat array of notes into arrays of arrays of notes, each inner array represents one measure in music score
 Vex.UI.notesToBars = function (notes, timeSignature) {
 	if (notes && timeSignature) {
 		var tickables = []

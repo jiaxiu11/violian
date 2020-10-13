@@ -20,7 +20,7 @@
                     v-row
                       v-col
                         h1 Submit your practice audio to get feedback!
-                        
+                      
                     v-row
                       v-col(cols="6")
                         v-file-input(v-model="newAudio" label="Upload audio..." multiple outlined color="indigo" dense)
@@ -30,8 +30,28 @@
                     v-row.justify-center
                       v-col.py-0(cols="12")
                         div(v-for="(part, idx) in scoreParts" :key="idx")
-                          div(:id="`vexflow-wrapper-${idx}`")
+                          div(:id="`vexflow-wrapper-${idx}`" style="position:relative")
                           line-graph(:transcribedNotes="transcribedNotes")
+
+                    v-row
+                      v-col
+                        v-btn(@click="playTutorAudio") Play
+                        v-btn(@click="pauseTutorAudio") Pause
+                        v-btn(@click="transform = 0") reset
+                        v-btn(@click="left = 400; reset = true;") Change left pos
+
+                      //- this is the rolling tick
+                      img(
+                        :src="require('../../assets/tick.png')" 
+                        style=`
+                          position:absolute; 
+                          top:0; 
+                          opacity:0.7; 
+                          transition: 8s transform linear;
+                          `
+                        :style="{ transform: `translateX(${transform}px)`, left: `${left}px`, transition: `${transitionTime}s transform linear` }"
+                        id="tick"
+                      )
 
         v-col.pa-0(cols="3" style="border-bottom: 1px solid #BDBDBD; border-left: 1px solid #BDBDBD; position: fixed; right:0;" :class="{ 'full-height': fullHeight, 'partial-height': !fullHeight }")
           h1.font-weight-bold.pl-4.py-2(style="background-color:#EEEEEE;") Lessons
@@ -51,6 +71,11 @@
                 a.link.pl-4.py-5(style="font-size: 16px; background-color:#C5CAE9;") {{ lessonIdx + 1 }}. {{ currLesson.name }}
               v-list-item-content.py-0.link(v-else-if="currLesson != lesson")
                 a.link.pl-4.py-5(style="font-size: 16px;" @click="goToLesson($event, currLesson)") {{ lessonIdx + 1 }}. {{ currLesson.name }}
+
+    //- Tutor audio file
+    audio(ref="tutorAudio" @timeupdate="tutorAudioTimeUpdate")
+      source(src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="audio/ogg")
+      | Your browser does not support the audio tag.
 </template>
 
 <script>
@@ -85,9 +110,16 @@ export default {
       notesInBars: [],
       handlers: [],
       scoreParts: [],
+      startEndPosOfRows: [],
 
       // auto feedback
       newAudio: null,
+      transform: 0,
+      activeRow: 0,
+      left: 0,
+      transitionTime: 2,
+      moving: false,
+      playing: false,
 
       // thread info
       thread: null,
@@ -240,6 +272,47 @@ export default {
       } else {
         alert('Please input an audio file to gain feedback')
       }
+    },
+
+    playTutorAudio () {
+      // play the audio
+      this.$refs['tutorAudio'].play()
+      this.transform = this.startEndPosOfRows[this.activeRow][1] - this.startEndPosOfRows[this.activeRow][0]
+      this.moving = true
+      this.playing = true
+    },
+
+    pauseTutorAudio () {
+      this.$refs['tutorAudio'].pause()
+      let tick = document.getElementById('tick')
+      let transform = window.getComputedStyle(tick).transform
+      let parts = transform.slice(7,-1).split(','); 
+      this.transform = parseFloat(parts[parts.length - 2])
+      this.moving = false
+      this.playing = false
+    },
+
+    tutorAudioTimeUpdate (event) {
+      // if it is not moving means it has just been shifted to the next row
+      if (!this.moving && this.playing) {
+        this.transform = this.startEndPosOfRows[this.activeRow][1] - this.startEndPosOfRows[this.activeRow][0]
+        this.transitionTime = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature.split('/')[0]) * this.handlers[this.activeRow].getNotePositions().filter(x => x.length > 0).length
+      }
+
+      if (event.target.currentTime / this.transitionTime > this.activeRow + 1) {
+        this.activeRow++
+        // shift the tick to the next row
+        if (this.activeRow < this.handlers.length) {
+          this.left = this.startEndPosOfRows[this.activeRow][0]
+          this.transitionTime = 0
+          this.transform = 0
+          var tick = document.getElementById('tick')
+          tick.parentNode.removeChild(tick)
+          var wrapper = document.getElementById(`vexflow-wrapper-${this.activeRow}`)
+          wrapper.appendChild(tick);
+          this.moving = false
+        }
+      }
     }
   },
 
@@ -274,9 +347,8 @@ export default {
       }
     })
 
-
-    this.currEx.melody = this.currEx.melody.split('-')
     if (this.currEx.useScore) {
+      this.currEx.melody = this.currEx.melody.split('-')
       this.notesInBars = vexUI.notesToBars(this.currEx.melody, this.currEx.timeSignature)
     
       for (let i = 0; i < this.notesInBars.length; i += 4) {
@@ -298,7 +370,16 @@ export default {
         }).init())
 
         this.handlers[i].importNotes(this.scoreParts[i], this.currEx.timeSignature)
+        var notePositions = this.handlers[i].getNotePositions().filter(x => x.length > 0)
+        this.startEndPosOfRows.push([notePositions[0][0].x, notePositions[notePositions.length - 1][notePositions[notePositions.length - 1].length - 1].x])
       }
+    
+      // append the tick to the score
+      this.left = this.startEndPosOfRows[0][0]
+      this.transitionTime = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature.split('/')[0]) * this.handlers[this.activeRow].getNotePositions().filter(x => x.length > 0).length
+      var tick = document.getElementById('tick')
+      tick.parentNode.removeChild(tick);
+      wrapper.appendChild(tick);
     }
   },
 

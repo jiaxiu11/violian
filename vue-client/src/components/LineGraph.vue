@@ -148,7 +148,7 @@ export default {
             height: 150,
             margin: {
               l: 30,
-              r: 30,
+              r: 20,
               b: 20,
               t: 20,
               pad: 8
