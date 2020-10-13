@@ -35,6 +35,13 @@
   - GET `/exercise/list?lid=` - `{ exercises: [<exerciseObj>] }`
   - DELETE `/exercise/del?eid=` - `{ data: ok }`
 
+## recordings
+- recording management
+  - POST `/recording/new { eid, audio }` - `{ recording: <recordingObj>`
+  - GET `/recording/list?eid=` - `{ recordings: [<recordingObj>] }`
+  - DELETE `/recording/del?rid=` - `{ data: ok }`
+  - GET `/recording/get-notes?rid=` - `{ recording: [<recordingObj>] }`
+
 ## subscriptions for student and course
 - POST `/subscribe/new { studentId, courseId }` - `{ data: ok }`
 - GET `/subscribe/get/student?uid=` - `{ courses: [<courseObj>] }`

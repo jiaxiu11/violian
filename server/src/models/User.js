@@ -48,6 +48,7 @@ module.exports = (sequelize, DataTypes) => {
     User.belongsToMany(models.Course, { as: 'SubscribedCourses', through: 'StudentCourses' })
     User.hasMany(models.Thread)
     User.hasMany(models.Post)
+    User.hasMany(models.Recording)
   }
   return User
 }
