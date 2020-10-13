@@ -13,8 +13,8 @@ export default {
   },
   props: ["transcribedNotes", "rowNum", "bpm"],
   watch: {
-    transcribedNotes: function (val) {
-      console.log(val)
+    transcribedNotes: function(val) {
+      console.log(val);
       this.graphs = this.getGraphsForNotes(val);
     }
   },
@@ -37,8 +37,7 @@ export default {
       let octave = 0;
       if (noteNumber.length > 2)
         octave = noteNumber[noteNumber.length - 1] - "0";
-      else
-        octave = noteNumber[1] - "0";
+      else octave = noteNumber[1] - "0";
       let note = noteNumber[0].charCodeAt(0) - "C".charCodeAt(0);
       if (note < 0) {
         note = note + 8;
@@ -67,37 +66,6 @@ export default {
         ((y - minY) / (maxY - minY)) *
         (this.maxNoteNumber[1] - this.minNoteNumber[1])
       );
-    },
-    splitIntoRows(notes) {
-      let timePerRow = this.getSecondsPerRow();
-      let newRowStartTime = 0;
-      let rows = [];
-      rows.push([]);
-      for (let i = 0; i < notes.length; i++) {
-        let note = notes[i];
-        if (note.onset < newRowStartTime + timePerRow) {
-          if (note.onset + note.duration <= newRowStartTime + timePerRow) {
-            rows[rows.length - 1].push(note);
-          } else {
-            // split a note that lasts across two rows into two notes
-            let noteCopy = { ...note };
-            noteCopy.onset = newRowStartTime + timePerRow;
-            noteCopy.duration =
-              note.onset + note.duration - (newRowStartTime + timePerRow);
-            note.duration = note.duration - noteCopy.duration;
-            rows[rows.length - 1].push(note);
-            notes[i] = noteCopy;
-            newRowStartTime = newRowStartTime + timePerRow;
-            rows.push([]);
-            i--;
-          }
-        } else {
-          newRowStartTime = newRowStartTime + timePerRow;
-          rows.push([]);
-          i--;
-        }
-      }
-      return rows;
     },
     getTickValsForRow(rowIndex) {
       let ticks = [];
@@ -146,66 +114,61 @@ export default {
       return barDividers;
     },
     getGraphsForNotes(notes) {
-      let rows = this.splitIntoRows(notes);
-      let graphs = [];
-      for (let i = 0; i < rows.length; i++) {
-        let row = rows[i];
-        let graph = {
-          data: [
-            {
-              x: this.getAnnotationXValsForNotes(row),
-              y: this.getAnnotationYValsForNotes(row),
-              text: this.getAnnotationsForNotes(row),
-              mode: "text"
-            }
-          ],
-          layout: {
-            xaxis: {
-              zeroline: false,
-              range: [
-                i * this.secondsPerRow,
-                (i + 1) * this.secondsPerRow + 0.1
-              ],
-              tickvals: this.getTickValsForRow(i),
-              tickfont: {
-                family: "Old Standard TT, serif",
-                size: 10,
-                color: "Brown"
-              }
-            },
-            yaxis: {
-              range: [0, 3.1],
-              tickvals: [0, 1, 2, 3],
-              ticktext: ["C3", "C4", "C5", "C6"],
-              tickfont: {
-                family: "Old Standard TT, serif",
-                size: 10,
-                color: "Brown"
-              }
-            },
-            height: 150,
-            margin: {
-              l: 30,
-              r: 20,
-              b: 20,
-              t: 20,
-              pad: 8
-            },
-            shapes: row
-              .map(note => this.getLineSegmentForMusicNote(note))
-              .concat(this.getBarDividers(i))
+      let row = notes;
+      let graph = {
+        data: [
+          {
+            x: this.getAnnotationXValsForNotes(row),
+            y: this.getAnnotationYValsForNotes(row),
+            text: this.getAnnotationsForNotes(row),
+            mode: "text"
           }
-        };
-        graphs.push(graph);
-      }
-      return graphs;
+        ],
+        layout: {
+          xaxis: {
+            zeroline: false,
+            range: [
+              (this.rowNum - 1) * this.secondsPerRow,
+              this.rowNum * this.secondsPerRow + 0.1
+            ],
+            tickvals: this.getTickValsForRow(this.rowNum - 1),
+            tickfont: {
+              family: "Old Standard TT, serif",
+              size: 10,
+              color: "Brown"
+            }
+          },
+          yaxis: {
+            range: [0, 3.1],
+            tickvals: [0, 1, 2, 3],
+            ticktext: ["C3", "C4", "C5", "C6"],
+            tickfont: {
+              family: "Old Standard TT, serif",
+              size: 10,
+              color: "Brown"
+            }
+          },
+          height: 150,
+          margin: {
+            l: 30,
+            r: 20,
+            b: 20,
+            t: 20,
+            pad: 8
+          },
+          shapes: row
+            .map(note => this.getLineSegmentForMusicNote(note))
+            .concat(this.getBarDividers(this.rowNum - 1))
+        }
+      };
+      return [graph];
     }
   },
   async mounted() {
     this.secondsPerRow = this.getSecondsPerRow();
     if (this.transcribedNotes.length > 0)
       this.graphs = this.getGraphsForNotes(this.transcribedNotes);
-  },
+  }
 };
 </script>
 
