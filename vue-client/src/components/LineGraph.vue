@@ -67,13 +67,22 @@ export default {
         (this.maxNoteNumber[1] - this.minNoteNumber[1])
       );
     },
+    getTickTextsForRow(rowIndex) {
+      let ticks = [];
+      for (let i = 0; i <= this.barsPerRow * this.timeSignature; i++) {
+        ticks.push(i);
+      }
+      return ticks.map(tick =>
+        (tick + rowIndex * this.barsPerRow * this.timeSignature).toString()
+      );
+    },
     getTickValsForRow(rowIndex) {
       let ticks = [];
       for (let i = 0; i <= this.barsPerRow * this.timeSignature; i++) {
         ticks.push(i);
       }
       return ticks.map(
-        tick => tick + rowIndex * this.barsPerRow * this.timeSignature
+        tick => (tick * 60) / this.bpm + rowIndex * this.secondsPerRow
       );
     },
     getAnnotationXValsForNotes(notes) {
@@ -96,8 +105,8 @@ export default {
       let barDividers = [];
       for (let i = 1; i <= this.barsPerRow; i++) {
         let x =
-          i * this.timeSignature +
-          rowIndex * this.timeSignature * this.barsPerRow;
+          (i * this.timeSignature * 60) / this.bpm +
+          rowIndex * this.secondsPerRow;
         let divider = {
           type: "line",
           x0: x,
@@ -132,6 +141,7 @@ export default {
               this.rowNum * this.secondsPerRow + 0.1
             ],
             tickvals: this.getTickValsForRow(this.rowNum - 1),
+            ticktext: this.getTickTextsForRow(this.rowNum - 1),
             tickfont: {
               family: "Old Standard TT, serif",
               size: 10,
