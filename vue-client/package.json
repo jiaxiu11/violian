@@ -20,6 +20,7 @@
     "videojs-contrib-dash": "^2.11.0",
     "videojs-hotkeys": "^0.2.27",
     "vue": "^2.6.12",
+    "vue-audio-recorder": "^3.0.1",
     "vue-plotly": "^1.1.0",
     "vue-router": "^3.4.6",
     "vuetify": "^2.3.13",

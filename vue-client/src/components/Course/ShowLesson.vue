@@ -17,10 +17,21 @@
               v-tab-item(value="feedback")
                 v-card(flat tile)
                   v-container
+                    v-row.ma-0(style="width: 100%;")
+                      v-col.pa-0
+                        //- audio-recorder(v-if="showRecorder")
                     v-row
                       v-col
                         h1 Submit your practice audio to get feedback!
 
+                    v-row
+                      v-col
+                        v-btn(color="#ec5252" dark @click="onStart" style="margin-top: 2px;") Start
+                      v-col
+                        v-btn(color="#ec5252" dark @click="onStop" style="margin-top: 2px;") Stop
+                    div(:class="`sound-clips`" )
+                    div(:class="`main-controls`" )
+                        
                     v-row
                       v-col(cols="6")
                         v-file-input(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense)
@@ -102,14 +113,20 @@ import ThreadService from "@/services/ThreadService"
 import _ from 'lodash'
 import RecordingService from "@/services/RecordingService"
 
+
 export default {
   name: 'ShowLesson',
   components: {
     'video-player': VideoPlayer,
-    'line-graph': LineGraph
+    'line-graph': LineGraph,
   },
   data () {
     return {
+      showRecorder: true,
+      constraints: { audio: true },
+      chunks: [],
+      mediaRecorder: null,
+
       course: null,
       lesson: null,
 
@@ -183,6 +200,92 @@ export default {
     ...mapState(["user", "students", "subscribedTutors"])
   },
   methods: {
+    onSuccess(stream) {
+      const record = document.querySelector('.record');
+      const stop = document.querySelector('.stop');
+      const soundClips = document.querySelector('.sound-clips');
+      const mainSection = document.querySelector('.main-controls');
+      console.log(soundClips, mainSection)
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.start();
+      var chunks = [];
+      console.log(mediaRecorder.state);
+      console.log("recorder started");
+
+      mediaRecorder.onstop = function(e) {
+        console.log("data available after MediaRecorder.stop() called.");
+
+        const clipName = prompt('Enter a name for your sound clip?','My unnamed clip');
+
+        const clipContainer = document.createElement('article');
+        const clipLabel = document.createElement('p');
+        const audio = document.createElement('audio');
+        const deleteButton = document.createElement('button');
+
+        clipContainer.classList.add('clip');
+        audio.setAttribute('controls', '');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'delete';
+
+        if(clipName === null) {
+          clipLabel.textContent = 'My unnamed clip';
+        } else {
+          clipLabel.textContent = clipName;
+        }
+
+        clipContainer.appendChild(audio);
+        clipContainer.appendChild(clipLabel);
+        clipContainer.appendChild(deleteButton);
+        soundClips.appendChild(clipContainer);
+
+        audio.controls = true;
+        console.log(this.chunks)
+        const blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+        chunks = [];
+        const audioURL = window.URL.createObjectURL(blob);
+        audio.src = audioURL;
+        console.log("recorder stopped");
+
+        deleteButton.onclick = function(e) {
+          let evtTgt = e.target;
+          evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+        }
+
+        clipLabel.onclick = function() {
+          const existingName = clipLabel.textContent;
+          const newClipName = prompt('Enter a new name for your sound clip?');
+          if(newClipName === null) {
+            clipLabel.textContent = existingName;
+          } else {
+            clipLabel.textContent = newClipName;
+          }
+        }
+      }
+
+      mediaRecorder.ondataavailable = function(e) {
+        chunks.push(e.data);
+        console.log(chunks);
+
+      }
+      this.mediaRecorder = mediaRecorder;
+    },
+    onError(err){
+      console.log(err)
+    },
+
+    onStart() {
+      navigator.mediaDevices.getUserMedia(this.constraints).then(this.onSuccess, this.onError);
+      
+      // record.style.background = "red";
+
+      // stop.disabled = false;
+      // record.disabled = true;
+    },
+    onStop() {
+      this.mediaRecorder.stop();
+      console.log(this.mediaRecorder.state);
+      console.log("recorder stopped");
+    },
     goToLesson (event, lesson) {
       this.$router.push({
         name: `showlesson`,
