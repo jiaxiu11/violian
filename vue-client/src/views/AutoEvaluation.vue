@@ -1,10 +1,12 @@
 <template lang="pug">
-    v-card.mx-10
-        v-card-title.mt-10 Click on a note to leave comment
-        v-card-subtitle(v-if="selectedIndex !== null") Selected: {{notesByRow[selectedRowNum-1][selectedIndex]}}
-        v-text-field.mx-10(label="comment" hint="comment on a note" persistent-hint outlined :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
-        div(v-for="(row, idx) in notesByRow" :key="idx")
-            EvaluationLineGraph( :bpm="bpm" :transcribedNotes="row" :rowNum="idx+1" :onSelectNote="onSelectNote")
+    v-card.mx-10.mt-10(height="600px" class="commentCard")
+        v-card-title Click on a note to leave comment
+        v-card-subtitle(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
+        v-text-field.mx-10(label="comment" hint="comment on a note" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
+        v-divider
+        v-card-text(class="commentCardScores")
+            div(v-for="(row, idx) in notesByRow" :key="idx")
+                EvaluationLineGraph( :bpm="bpm" :transcribedNotes="row" :rowNum="idx+1" :onSelectNote="onSelectNote")
 </template>
 
 <script>
@@ -71,10 +73,26 @@ export default {
           noteCopy.onset = onset + 32
           return noteCopy
       })
-    this.notesByRow = [this.transcribedNotes, secondRow, thirdRow];
+      let fourthRow = this.transcribedNotes.map(note => {
+          let noteCopy = {...note}
+          let onset = note.onset
+          noteCopy.onset = onset + 48
+          return noteCopy
+      })
+    this.notesByRow = [this.transcribedNotes, secondRow, thirdRow, fourthRow];
   }
 };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped></style>
+<style scoped>
+    .commentCard {
+        display: flex !important;
+        flex-direction: column;
+    }
+
+    .commentCardScores {
+        flex-grow: 1;
+        overflow: auto;
+    }
+</style>

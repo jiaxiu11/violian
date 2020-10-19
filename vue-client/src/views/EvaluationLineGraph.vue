@@ -1,5 +1,11 @@
 <template lang="pug">
-    div(:id="plotDivId" :ref="plotContainerId")
+    div
+        div(:id="plotDivId" :ref="plotContainerId")
+        div(v-if="selectedNote" class="tooltip" :style="{top: tooltipTop, left:tooltipLeft, visibility:showTooltip?'visible':'hidden'}")
+            v-alert(dense border="left" color="cyan" colored-border elevation="2")
+                div note: {{selectedNote.note}}, onset: {{selectedNote.onset}}, duration: {{selectedNote.duration}}
+                div(v-if="selectedNote.comment") Comment: {{selectedNote.comment}}
+
 </template>
 
 <script>
@@ -58,10 +64,7 @@ export default {
     },
     onHover(data) {
       console.log(data);
-
       let idx = data.points[0].pointIndex;
-      console.log(this.rowNum, idx);
-
       let trace = { ...this.graph.data[0] };
       let marker = { ...this.graph.data[0].marker };
       let colors = [...this.graph.data[0].marker.color];
@@ -69,27 +72,21 @@ export default {
       colors[idx] = this.highlightedNoteColor;
       marker.color = colors;
       trace.marker = marker;
-
       this.$set(this.graph.data, 0, trace);
-      console.log(this.$refs);
-      console.log(this.graph.data[0].marker.color);
 
-      //
-      // // var xaxis = data.points[0].xaxis,
-      //     yaxis = data.points[0].yaxis;
-      // let left = xaxis.l2p(data.points[0].x) + xaxis._offset
-      // let top = yaxis.l2p(data.points[0].y) + yaxis._offset + 152
 
-      // let lineGraphBoundingRect = this.$refs.lineGraph.getBoundingClientRect()
-      //   console.log(note.x[idx])
-      //   let left = lineGraphBoundingRect.left+ 10 + note.x[idx]/16 * lineGraphBoundingRect.width
+        let lineGraphBoundingRect = this.$refs[this.plotContainerId].getBoundingClientRect()
+        var xaxis = data.points[0].xaxis,
+          yaxis = data.points[0].yaxis;
+      let left = xaxis.l2p(data.points[0].x) + xaxis._offset
+        let top = yaxis.l2p(data.points[0].y) + lineGraphBoundingRect.top - 70
 
-      // console.log(left)
-      // console.log(top)
-      // console.log(this.$refs.lineGraph.getBoundingClientRect())
-      // this.tooltipLeft = left + 'px'
-      //     this.tooltipTop =top + 'px'
-      //   this.showTooltip = true
+      console.log(left)
+      console.log(top)
+        this.selectedNote = this.transcribedNotes[idx]
+      this.tooltipLeft = left + 'px'
+        this.tooltipTop =top + 'px'
+        this.showTooltip = true
     },
     onUnhover(data) {
       let idx = data.points[0].pointIndex;
@@ -104,6 +101,7 @@ export default {
       note.marker = marker;
 
       this.$set(this.graph.data, 0, note);
+        this.showTooltip = false
     },
     getSecondsPerRow() {
       let timeSignature = 4;
@@ -282,10 +280,10 @@ export default {
 
   data() {
     return {
+        selectedNote:null,
       plotContainerId: `lineGraphContainer${this.rowNum - 1}`,
       plotDivId: `lineGraph${this.rowNum - 1}`,
-      show: true,
-      showTooltip: true,
+      showTooltip: false,
       tooltipLeft: "40px",
       tooltipTop: "246px",
       minNoteNumber: "C3",
@@ -307,10 +305,10 @@ export default {
 <style scoped>
 .tooltip {
   z-index: 200;
-  background: #c8c8c8;
-  padding: 10px;
+  /*background: #c8c8c8;*/
+  /*padding: 10px;*/
   position: absolute;
-  width: 200px;
-  height: 100px;
+  /*width: 200px;*/
+  /*height: 100px;*/
 }
 </style>
