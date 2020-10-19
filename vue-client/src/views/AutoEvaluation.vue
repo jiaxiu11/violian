@@ -1,6 +1,6 @@
 <template lang="pug">
     v-card.mx-10
-        v-card-title.mt-10 Select a note to leave comment
+        v-card-title.mt-10 Click on a note to leave comment
         v-card-subtitle(v-if="selectedIndex !== null") Selected: {{notesByRow[selectedRowNum-1][selectedIndex]}}
         v-text-field.mx-10(label="comment" hint="comment on a note" persistent-hint outlined :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
         div(v-for="(row, idx) in notesByRow" :key="idx")

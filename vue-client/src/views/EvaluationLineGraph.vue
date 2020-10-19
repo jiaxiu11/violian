@@ -1,10 +1,9 @@
 <template lang="pug">
-    div(:id="`lineGraph${rowNum-1}`" :ref="`lineGraph${rowNum-1}`")
-        Plotly(:id="`line${rowNum-1}`" :ref="`line${rowNum-1}`" v-if="graph" :data="graph.data" :layout="graph.layout" :display-mode-bar="false" :responsive="true" @hover="onHover" @unhover="onUnhover" @click="onClick")
+    div(:id="plotDivId" :ref="plotContainerId")
 </template>
 
 <script>
-import { Plotly } from "vue-plotly";
+import Plotly from "plotly.js/dist/plotly";
 // div
 // div(:id="`lineGraph${rowNum-1}`" :ref="`lineGraph${rowNum-1}`")
 // span(class="tooltip" :style="{top: tooltipTop, left:tooltipLeft}") this is a tool tip
@@ -12,25 +11,56 @@ import { Plotly } from "vue-plotly";
 
 export default {
   name: "EvaluationLineGraph",
-  components: {
-    Plotly
-  },
   props: ["transcribedNotes", "rowNum", "bpm", "onSelectNote"],
   watch: {
     transcribedNotes: function(val) {
       this.graph = this.getGraphForNotes(val);
     }
   },
+  computed: {
+    plotDiv() {
+      return this.$refs[this.plotContainerId];
+    }
+  },
+  mounted() {
+    this.graph = this.getGraphForNotes(this.transcribedNotes);
+    Plotly.newPlot(
+      this.plotDivId,
+      this.graph.data,
+      this.graph.layout,
+      this.graph.config
+    );
+    this.plotDiv.on("plotly_hover", this.onHover);
+    this.plotDiv.on("plotly_unhover", this.onUnhover);
+    this.plotDiv.on("plotly_click", this.onClick);
+  },
+  created() {
+    this.$watch("graph", this.update, { deep: true });
+  },
+  beforeDestroy() {
+    if (!this.plotDiv["off"]) return;
+    this.plotDiv.off("plotly_hover", this.onHover);
+    this.plotDiv.off("plotly_unhover", this.onUnhover);
+    this.plotDiv.off("plotly_click", this.onClick);
+  },
   methods: {
+    update() {
+      Plotly.react(
+        this.plotDivId,
+        this.graph.data,
+        this.graph.layout,
+        this.graph.config
+      );
+    },
     onClick(data) {
       let idx = data.points[0].pointIndex;
       this.onSelectNote(this.rowNum, idx);
     },
     onHover(data) {
-        console.log(data)
+      console.log(data);
 
       let idx = data.points[0].pointIndex;
-        console.log(this.rowNum, idx)
+      console.log(this.rowNum, idx);
 
       let trace = { ...this.graph.data[0] };
       let marker = { ...this.graph.data[0].marker };
@@ -41,24 +71,24 @@ export default {
       trace.marker = marker;
 
       this.$set(this.graph.data, 0, trace);
-      console.log(this.$refs)
-      console.log(this.graph.data[0].marker.color)
+      console.log(this.$refs);
+      console.log(this.graph.data[0].marker.color);
 
-        //
-        // // var xaxis = data.points[0].xaxis,
-        //     yaxis = data.points[0].yaxis;
-        // let left = xaxis.l2p(data.points[0].x) + xaxis._offset
-        // let top = yaxis.l2p(data.points[0].y) + yaxis._offset + 152
+      //
+      // // var xaxis = data.points[0].xaxis,
+      //     yaxis = data.points[0].yaxis;
+      // let left = xaxis.l2p(data.points[0].x) + xaxis._offset
+      // let top = yaxis.l2p(data.points[0].y) + yaxis._offset + 152
 
       // let lineGraphBoundingRect = this.$refs.lineGraph.getBoundingClientRect()
       //   console.log(note.x[idx])
       //   let left = lineGraphBoundingRect.left+ 10 + note.x[idx]/16 * lineGraphBoundingRect.width
 
-        // console.log(left)
-        // console.log(top)
-        // console.log(this.$refs.lineGraph.getBoundingClientRect())
-        // this.tooltipLeft = left + 'px'
-        //     this.tooltipTop =top + 'px'
+      // console.log(left)
+      // console.log(top)
+      // console.log(this.$refs.lineGraph.getBoundingClientRect())
+      // this.tooltipLeft = left + 'px'
+      //     this.tooltipTop =top + 'px'
       //   this.showTooltip = true
     },
     onUnhover(data) {
@@ -180,8 +210,8 @@ export default {
       );
     },
     getGraphForNotes(notes) {
-        console.log('redraw')
-        console.log(notes)
+      console.log("redraw");
+      console.log(notes);
       let row = notes;
       let graph = {
         data: [
@@ -193,7 +223,7 @@ export default {
             base: this.getBarBaseValsForNotes(row),
             text: this.getAnnotationsForNotes(row),
             // hovertemplate: "<b>%{text}</b><extra></extra>",
-              hoverinfo:'none',
+            hoverinfo: "none",
             marker: {
               color: this.getBarColorsForNotes(row)
             },
@@ -209,6 +239,7 @@ export default {
               (this.rowNum - 1) * this.secondsPerRow,
               this.rowNum * this.secondsPerRow + 0.1
             ],
+            fixedrange: true,
             tickvals: this.getTickValsForRow(this.rowNum - 1),
             ticktext: this.getTickTextsForRow(this.rowNum - 1),
             tickfont: {
@@ -219,6 +250,7 @@ export default {
           },
           yaxis: {
             range: [0, 3.3],
+            fixedrange: true,
             tickvals: [0, 1, 2, 3],
             ticktext: ["C3", "C4", "C5", "C6"],
             tickfont: {
@@ -236,6 +268,12 @@ export default {
             pad: 8
           },
           shapes: this.getBarDividers(this.rowNum - 1)
+        },
+        config: {
+          displayModeBar: false,
+          showAxisDragHandles: false,
+          scrollZoom: false,
+          showAxisRangeEntryBoxes: false
         }
       };
       return graph;
@@ -244,10 +282,12 @@ export default {
 
   data() {
     return {
-        show:true,
-        showTooltip: true,
-        tooltipLeft: '40px',
-        tooltipTop:'246px',
+      plotContainerId: `lineGraphContainer${this.rowNum - 1}`,
+      plotDivId: `lineGraph${this.rowNum - 1}`,
+      show: true,
+      showTooltip: true,
+      tooltipLeft: "40px",
+      tooltipTop: "246px",
       minNoteNumber: "C3",
       maxNoteNumber: "C6",
       timeSignature: 4,
@@ -259,22 +299,18 @@ export default {
       selectedNoteColor: "",
       commentedNoteColor: "DarkSeaGreen"
     };
-  },
-  mounted() {
-    this.graph = this.getGraphForNotes(this.transcribedNotes);
   }
 };
 </script>
 
-
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-    .tooltip {
-        z-index: 200;
-        background: #C8C8C8;
-        padding: 10px;
-        position: absolute;
-        width:200px;
-        height:100px;
-    }
+.tooltip {
+  z-index: 200;
+  background: #c8c8c8;
+  padding: 10px;
+  position: absolute;
+  width: 200px;
+  height: 100px;
+}
 </style>
