@@ -52,14 +52,26 @@ export default {
         {
           onset: 10,
           note: "D3",
-          duration: 8
+          duration: 6
         }
       ]
     };
   },
   mounted() {
     //TODO: split notes into rows
-    this.notesByRow = [this.transcribedNotes];
+      let secondRow = this.transcribedNotes.map(note => {
+          let noteCopy = {...note}
+          let onset = note.onset
+          noteCopy.onset = onset + 16
+          return noteCopy
+      })
+      let thirdRow = this.transcribedNotes.map(note => {
+          let noteCopy = {...note}
+          let onset = note.onset
+          noteCopy.onset = onset + 32
+          return noteCopy
+      })
+    this.notesByRow = [this.transcribedNotes, secondRow, thirdRow];
   }
 };
 </script>

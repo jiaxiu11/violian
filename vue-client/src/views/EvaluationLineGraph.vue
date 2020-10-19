@@ -1,9 +1,15 @@
 <template lang="pug">
-    Plotly(v-if="graph" :data="graph.data" :layout="graph.layout" :display-mode-bar="false" :responsive="true" @hover="onHover" @unhover="onUnhover" @click="onClick")
+    div(:id="`lineGraph${rowNum-1}`" :ref="`lineGraph${rowNum-1}`")
+        Plotly(:id="`line${rowNum-1}`" :ref="`line${rowNum-1}`" v-if="graph" :data="graph.data" :layout="graph.layout" :display-mode-bar="false" :responsive="true" @hover="onHover" @unhover="onUnhover" @click="onClick")
 </template>
 
 <script>
 import { Plotly } from "vue-plotly";
+// div
+// div(:id="`lineGraph${rowNum-1}`" :ref="`lineGraph${rowNum-1}`")
+// span(class="tooltip" :style="{top: tooltipTop, left:tooltipLeft}") this is a tool tip
+// Plotly(v-if="graph" :data="graph.data" :layout="graph.layout" :display-mode-bar="false" :responsive="true" @hover="onHover" @unhover="onUnhover" @click="onClick")
+
 export default {
   name: "EvaluationLineGraph",
   components: {
@@ -21,17 +27,39 @@ export default {
       this.onSelectNote(this.rowNum, idx);
     },
     onHover(data) {
-      let idx = data.points[0].pointIndex;
+        console.log(data)
 
-      let note = { ...this.graph.data[0] };
+      let idx = data.points[0].pointIndex;
+        console.log(this.rowNum, idx)
+
+      let trace = { ...this.graph.data[0] };
       let marker = { ...this.graph.data[0].marker };
       let colors = [...this.graph.data[0].marker.color];
 
       colors[idx] = this.highlightedNoteColor;
       marker.color = colors;
-      note.marker = marker;
+      trace.marker = marker;
 
-      this.$set(this.graph.data, 0, note);
+      this.$set(this.graph.data, 0, trace);
+      console.log(this.$refs)
+      console.log(this.graph.data[0].marker.color)
+
+        //
+        // // var xaxis = data.points[0].xaxis,
+        //     yaxis = data.points[0].yaxis;
+        // let left = xaxis.l2p(data.points[0].x) + xaxis._offset
+        // let top = yaxis.l2p(data.points[0].y) + yaxis._offset + 152
+
+      // let lineGraphBoundingRect = this.$refs.lineGraph.getBoundingClientRect()
+      //   console.log(note.x[idx])
+      //   let left = lineGraphBoundingRect.left+ 10 + note.x[idx]/16 * lineGraphBoundingRect.width
+
+        // console.log(left)
+        // console.log(top)
+        // console.log(this.$refs.lineGraph.getBoundingClientRect())
+        // this.tooltipLeft = left + 'px'
+        //     this.tooltipTop =top + 'px'
+      //   this.showTooltip = true
     },
     onUnhover(data) {
       let idx = data.points[0].pointIndex;
@@ -153,6 +181,7 @@ export default {
     },
     getGraphForNotes(notes) {
         console.log('redraw')
+        console.log(notes)
       let row = notes;
       let graph = {
         data: [
@@ -163,7 +192,8 @@ export default {
             width: this.getBarWidthValsForNotes(row),
             base: this.getBarBaseValsForNotes(row),
             text: this.getAnnotationsForNotes(row),
-            hovertemplate: "<i>%{text}</i><extra></extra>",
+            // hovertemplate: "<b>%{text}</b><extra></extra>",
+              hoverinfo:'none',
             marker: {
               color: this.getBarColorsForNotes(row)
             },
@@ -171,7 +201,7 @@ export default {
           }
         ],
         layout: {
-          hovermode: "closest",
+          hovermode: "x",
           hoverlabel: { bgcolor: "#FFF" },
           xaxis: {
             zeroline: false,
@@ -214,6 +244,10 @@ export default {
 
   data() {
     return {
+        show:true,
+        showTooltip: true,
+        tooltipLeft: '40px',
+        tooltipTop:'246px',
       minNoteNumber: "C3",
       maxNoteNumber: "C6",
       timeSignature: 4,
@@ -232,5 +266,15 @@ export default {
 };
 </script>
 
+
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped></style>
+<style scoped>
+    .tooltip {
+        z-index: 200;
+        background: #C8C8C8;
+        padding: 10px;
+        position: absolute;
+        width:200px;
+        height:100px;
+    }
+</style>
