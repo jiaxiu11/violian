@@ -4,9 +4,9 @@
         v-card-subtitle(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
         v-text-field.mx-10(label="comment" hint="comment on a note" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
         v-divider
-        v-card-text(class="commentCardScores")
+        v-card-text(class="commentCardScores" v-on:scroll.passive='onLineGraphScroll')
             div(v-for="(row, idx) in notesByRow" :key="idx")
-                EvaluationLineGraph( :bpm="bpm" :transcribedNotes="row" :rowNum="idx+1" :onSelectNote="onSelectNote")
+                EvaluationLineGraph( :bpm="bpm" :transcribedNotes="row" :rowNum="idx+1" :onSelectNote="onSelectNote" :isScrolling="isScrolling")
 </template>
 
 <script>
@@ -17,6 +17,17 @@ export default {
     EvaluationLineGraph
   },
   methods: {
+    onLineGraphScroll() {
+      clearTimeout(this.scrollTimeout);
+
+      if (!this.isScrolling) {
+        this.isScrolling = true;
+      }
+
+      this.scrollTimeout = setTimeout(() => {
+        this.isScrolling = false;
+      }, 200);
+    },
     onSelectNote(rowNum, noteIndex) {
       if (this.selectedIndex !== noteIndex || this.selectedRowNum !== rowNum) {
         this.selectedIndex = noteIndex;
@@ -35,6 +46,8 @@ export default {
   },
   data() {
     return {
+      scrollTimeout: null,
+      isScrolling: false,
       comment: null,
       selectedRowNum: null,
       selectedIndex: null,
@@ -61,24 +74,24 @@ export default {
   },
   mounted() {
     //TODO: split notes into rows
-      let secondRow = this.transcribedNotes.map(note => {
-          let noteCopy = {...note}
-          let onset = note.onset
-          noteCopy.onset = onset + 16
-          return noteCopy
-      })
-      let thirdRow = this.transcribedNotes.map(note => {
-          let noteCopy = {...note}
-          let onset = note.onset
-          noteCopy.onset = onset + 32
-          return noteCopy
-      })
-      let fourthRow = this.transcribedNotes.map(note => {
-          let noteCopy = {...note}
-          let onset = note.onset
-          noteCopy.onset = onset + 48
-          return noteCopy
-      })
+    let secondRow = this.transcribedNotes.map(note => {
+      let noteCopy = { ...note };
+      let onset = note.onset;
+      noteCopy.onset = onset + 16;
+      return noteCopy;
+    });
+    let thirdRow = this.transcribedNotes.map(note => {
+      let noteCopy = { ...note };
+      let onset = note.onset;
+      noteCopy.onset = onset + 32;
+      return noteCopy;
+    });
+    let fourthRow = this.transcribedNotes.map(note => {
+      let noteCopy = { ...note };
+      let onset = note.onset;
+      noteCopy.onset = onset + 48;
+      return noteCopy;
+    });
     this.notesByRow = [this.transcribedNotes, secondRow, thirdRow, fourthRow];
   }
 };
@@ -86,13 +99,13 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-    .commentCard {
-        display: flex !important;
-        flex-direction: column;
-    }
+.commentCard {
+  display: flex !important;
+  flex-direction: column;
+}
 
-    .commentCardScores {
-        flex-grow: 1;
-        overflow: auto;
-    }
+.commentCardScores {
+  flex-grow: 1;
+  overflow: auto;
+}
 </style>

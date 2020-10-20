@@ -1,7 +1,7 @@
 <template lang="pug">
     div
         div(:id="plotDivId" :ref="plotContainerId")
-        div(v-if="selectedNote" class="tooltip" :style="{top: tooltipTop, left:tooltipLeft, visibility:showTooltip?'visible':'hidden'}")
+        div(v-if="selectedNote  && showTooltip" class="tooltip" :style="{top: tooltipTop + 'px', left:tooltipLeft + 'px'}")
             v-alert(dense border="left" color="cyan" colored-border elevation="2")
                 div note: {{selectedNote.note}}, onset: {{selectedNote.onset}}, duration: {{selectedNote.duration}}
                 div(v-if="selectedNote.comment") Comment: {{selectedNote.comment}}
@@ -17,10 +17,15 @@ import Plotly from "plotly.js/dist/plotly";
 
 export default {
   name: "EvaluationLineGraph",
-  props: ["transcribedNotes", "rowNum", "bpm", "onSelectNote"],
+  props: ["transcribedNotes", "rowNum", "bpm", "onSelectNote", "isScrolling"],
   watch: {
     transcribedNotes: function(val) {
       this.graph = this.getGraphForNotes(val);
+    },
+    isScrolling: function(val) {
+      if (val) {
+        this.showTooltip = false;
+      }
     }
   },
   computed: {
@@ -74,19 +79,20 @@ export default {
       trace.marker = marker;
       this.$set(this.graph.data, 0, trace);
 
+      let lineGraphBoundingRect = this.$refs[
+        this.plotContainerId
+      ].getBoundingClientRect();
+      let xaxis = data.points[0].xaxis;
+      let yaxis = data.points[0].yaxis;
+      let left = xaxis.l2p(data.points[0].x) + xaxis._offset;
+      let top = yaxis.l2p(data.points[0].y) + lineGraphBoundingRect.top - 70;
 
-        let lineGraphBoundingRect = this.$refs[this.plotContainerId].getBoundingClientRect()
-        var xaxis = data.points[0].xaxis,
-          yaxis = data.points[0].yaxis;
-      let left = xaxis.l2p(data.points[0].x) + xaxis._offset
-        let top = yaxis.l2p(data.points[0].y) + lineGraphBoundingRect.top - 70
-
-      console.log(left)
-      console.log(top)
-        this.selectedNote = this.transcribedNotes[idx]
-      this.tooltipLeft = left + 'px'
-        this.tooltipTop =top + 'px'
-        this.showTooltip = true
+      console.log(left);
+      console.log(top);
+      this.selectedNote = this.transcribedNotes[idx];
+      this.tooltipLeft = left;
+      this.tooltipTop = top;
+      this.showTooltip = true;
     },
     onUnhover(data) {
       let idx = data.points[0].pointIndex;
@@ -101,7 +107,7 @@ export default {
       note.marker = marker;
 
       this.$set(this.graph.data, 0, note);
-        this.showTooltip = false
+      this.showTooltip = false;
     },
     getSecondsPerRow() {
       let timeSignature = 4;
@@ -280,12 +286,12 @@ export default {
 
   data() {
     return {
-        selectedNote:null,
+      selectedNote: null,
       plotContainerId: `lineGraphContainer${this.rowNum - 1}`,
       plotDivId: `lineGraph${this.rowNum - 1}`,
       showTooltip: false,
-      tooltipLeft: "40px",
-      tooltipTop: "246px",
+      tooltipLeft: 0,
+      tooltipTop: 0,
       minNoteNumber: "C3",
       maxNoteNumber: "C6",
       timeSignature: 4,
