@@ -8,7 +8,7 @@
               h1.font-weight-bold.pl-8.py-2 {{ course.name }}
           v-row.ma-0(style="width: 100%;")
             v-col.pa-0
-              video-player(:exercise="this.lesson.exercises[0]" :videoSrc="src" v-if="isVideoContent")
+              video-player(:exercise="this.lesson.exercises[0]" :videoSrc="videoSrc" v-if="isVideoContent")
           
           v-container 
             v-tabs(v-model='tab' color="indigo")
@@ -34,12 +34,12 @@
                             v-btn(light v-bind='attrs' v-on='on') Past Submissions
                               v-icon(right dark) mdi-menu-down
                           v-list
-                            v-list-item(v-for='(recording, index) in recordings' :key='index' @click="transcribedNotes = splitFeedbackIntoRows(JSON.parse(recording.transcription)); audioSrc = recording.audioUrl")
+                            v-list-item(v-for='(recording, index) in recordings' :key='index' @click="transcribedNotes = splitFeedbackIntoRows(JSON.parse(recording.transcription)); studentAudioSrc = recording.audioUrl")
                               v-list-item-title {{ recording.audioFilename }}
 
                     v-row.justify-center
                       v-col.py-0(cols="12")
-                        div(v-for="(part, idx) in scoreParts" :key="idx")
+                        div(v-for="(part, idx) in scoreRows" :key="idx")
                           div(:id="`vexflow-wrapper-${idx}`" style="position:relative")
                           line-graph(v-if="transcribedNotes.length > 0" :transcribedNotes="transcribedNotes[idx]" :rowNum="idx + 1" :bpm="currEx.bpm")
 
@@ -54,11 +54,14 @@
                         :src="require('../../assets/tick.png')" 
                         style=`
                           position:absolute; 
-                          top:0; 
-                          opacity:0.7; 
-                          transition: 8s transform linear;
+                          top:0;
+                          left:0;
+                          opacity:0.7;
+                          transform-origin: top left;
+                          will-change: transform;
+                          z-index: 2147483647;
                           `
-                        :style="{ transform: `translateX(${transform}px)`, left: `${left}px`, transition: `${transitionTime}s transform linear` }"
+                        :style="{ transform: `translate3d(${transform}px, 147px, 0px)` }"
                         id="tick"
                       )
 
@@ -73,7 +76,7 @@
                   v-expansion-panel-content.pa-0
                     v-list.py-0
                       v-list-item-group.py-0
-                        v-list-item.px-0(v-for="(exercise, exerciseIdx) in currLesson.exercises" @click="src = exercise.videoUrl" :key="exerciseIdx")
+                        v-list-item.px-0(v-for="(exercise, exerciseIdx) in currLesson.exercises" @click="videoSrc = exercise.videoUrl" :key="exerciseIdx")
                           v-list-item-content
                             div.pl-4.text-decoration-underline(style="font-size: 14px; color:#291957;") {{ exercise.name }}
               v-list-item-content.py-0.link(v-else-if="currLesson == lesson && lesson.exercises.length == 1")
@@ -82,7 +85,10 @@
                 a.link.pl-4.py-5(style="font-size: 16px;" @click="goToLesson($event, currLesson)") {{ lessonIdx + 1 }}. {{ currLesson.name }}
 
     //- Tutor audio file
-    audio(ref="tutorAudio" @timeupdate="tutorAudioTimeUpdate" :src="audioSrc" type="audio/ogg")
+    audio(ref="tutorAudio" @timeupdate="tutorAudioTimeUpdate" :src="videoSrc" type="audio/ogg")
+
+    //- Student audio file
+    //- audio(ref="studentAudio" @timeupdate="tutorAudioTimeUpdate" :src="studentAudioSrc" type="audio/ogg")
 </template>
 
 <script>
@@ -117,19 +123,17 @@ export default {
       currEx: null,
       notesInBars: [],
       handlers: [],
-      scoreParts: [],
-      startEndPosOfRows: [],
 
       // auto feedback
       newAudio: null,
-      transform: 0,
+      transform: {},
       activeRow: 0,
-      left: 0,
-      transitionTime: 2,
       moving: false,
       playing: false,
       recordings: [],
-      audioSrc: '',
+      studentAudioSrc: '',
+      scoreRows: [],
+      notePositions: [],
 
       // thread info
       thread: null,
@@ -156,7 +160,7 @@ export default {
       selected: null,
       fullHeight: false,
       opened: [0],
-      src: '',
+      videoSrc: '',
 
       // tabs
       tab: null,
@@ -234,26 +238,15 @@ export default {
     },
 
     tutorAudioTimeUpdate (event) {
-      // if it is not moving means it has just been shifted to the next row
-      if (!this.moving && this.playing) {
-        this.transform = this.startEndPosOfRows[this.activeRow][1] - this.startEndPosOfRows[this.activeRow][0]
-        this.transitionTime = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature.split('/')[0]) * this.handlers[this.activeRow].getNotePositions().filter(x => x.length > 0).length
-      }
 
-      if (event.target.currentTime / this.transitionTime > this.activeRow + 1) {
-        this.activeRow++
-        // shift the tick to the next row
-        if (this.activeRow < this.handlers.length) {
-          this.left = this.startEndPosOfRows[this.activeRow][0]
-          this.transitionTime = 0
-          this.transform = 0
-          var tick = document.getElementById('tick')
-          tick.parentNode.removeChild(tick)
-          var wrapper = document.getElementById(`vexflow-wrapper-${this.activeRow}`)
-          wrapper.appendChild(tick);
-          this.moving = false
-        }
-      }
+      // this.left = this.startEndPosOfRows[this.activeRow][0]
+      // this.transform = 0
+      // var tick = document.getElementById('tick')
+      // tick.parentNode.removeChild(tick)
+      // var wrapper = document.getElementById(`vexflow-wrapper-${this.activeRow}`)
+      // wrapper.appendChild(tick);
+      // this.moving = false
+      
     },
 
     splitFeedbackIntoRows (feedback) {
@@ -297,7 +290,7 @@ export default {
     }
 
     this.selected = this.course.lessons.indexOf(this.lesson)
-    this.src = this.lesson.exercises[0].videoUrl
+    this.videoSrc = this.lesson.exercises[0].videoUrl
     this.currEx = this.lesson.exercises[0]
 
     window.addEventListener('scroll', () => {
@@ -313,14 +306,14 @@ export default {
       this.notesInBars = vexUI.notesToBars(this.currEx.melody, this.currEx.timeSignature)
     
       for (let i = 0; i < this.notesInBars.length; i += 4) {
-        this.scoreParts.push(this.notesInBars.slice(i, i + 4).flat())
+        this.scoreRows.push(this.notesInBars.slice(i, i + 4).flat())
       }
 
       await this.$nextTick()
       
       var wrapper = document.getElementById(`vexflow-wrapper-${0}`)
       var width = wrapper.offsetWidth;
-      for (let i = 0; i < this.scoreParts.length; i++) {
+      for (let i = 0; i < this.scoreRows.length; i++) {
         this.handlers.push(new vexUI.Handler(`vexflow-wrapper-${i}`, {
           numberOfStaves: 4,
           stavesPerRow: 4,
@@ -330,9 +323,8 @@ export default {
           }
         }).init())
 
-        this.handlers[i].importNotes(this.scoreParts[i], this.currEx.timeSignature)
-        var notePositions = this.handlers[i].getNotePositions().filter(x => x.length > 0)
-        this.startEndPosOfRows.push([notePositions[0][0].x, notePositions[notePositions.length - 1][notePositions[notePositions.length - 1].length - 1].x])
+        this.handlers[i].importNotes(this.scoreRows[i], this.currEx.timeSignature)
+        this.notePositions = this.handlers[i].getNotePositions().filter(x => x.length > 0)
       }
     
       // append the tick to the score

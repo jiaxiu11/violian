@@ -2288,10 +2288,10 @@ Vex.UI.notesToBars = function (notes, timeSignature) {
 			var dur = noteArr[2]
 			var isDot = false
 			if (dur.includes("r")) {
-				dur = dur.replace("r", "");
+				dur = dur.replace("r", "")
 			}
 			if (dur.includes("d")) {
-				dur = dur.replace("d", "");
+				dur = dur.replace("d", "")
 				isDot = true;
 			}
 
@@ -2318,4 +2318,41 @@ Vex.UI.notesToBars = function (notes, timeSignature) {
 		return notesInBars
 	}
 }
+
+// convert a flat array of notes into arrays of arrays of notes, each inner array represents one measure in music score
+Vex.UI.notesToOnsetAndDuration = function (notes, timeSignature, bpm) {
+	if (notes && timeSignature && bpm) {
+		var result = []
+    var time = 0;
+    var beatValue = parseInt(timeSignature.split('/')[1])
+		notes.forEach(element => {
+			var temp = element.split("/")[2];
+			var isRest = false
+			var isDot = false
+			if (temp.includes("d") || temp.includes("r")) {
+				if (temp.includes("r")) {
+					temp = temp.replace("r", "")
+					isRest = true
+				}
+				if (temp.includes("d")) {
+					temp = temp.replace("d", "")
+					isDot = true
+				}
+			}
+      
+      // find out duration of note
+      duration = beatValue / parseInt(temp) * 60 / bpm
+      if (isDot) duration = duration * 1.5
+      
+      result.push({
+        onset: time,
+        duration: duration
+      })
+      
+      time += duration
+		})
+		return result
+	}
+}
+
 export default Vex.UI
