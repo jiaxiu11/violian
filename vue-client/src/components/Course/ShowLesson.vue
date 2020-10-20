@@ -41,7 +41,15 @@
                       v-col.py-0(cols="12")
                         div(v-for="(part, idx) in scoreRows" :key="idx")
                           div(:id="`vexflow-wrapper-${idx}`" style="position:relative")
-                          line-graph(v-if="transcribedNotes.length > 0" :transcribedNotes="transcribedNotes[idx]" :rowNum="idx + 1" :bpm="currEx.bpm")
+                          line-graph(v-if="transcribedNotes.length > 0"
+                              :transcribedNotes="transcribedNotes[idx]"
+                              :rowNum="idx + 1"
+                              :bpm="currEx.bpm"
+                              :onSelectNote="(rowNum,noteIdx)=>{}"
+                              :isScrolling="false"
+                              :shouldIndicateNoteClicked="false"
+                              :clickedNoteRowNum="0"
+                          )
 
                     v-row
                       v-col
@@ -93,7 +101,7 @@
 
 <script>
 /* eslint-disable */
-import LineGraph from "../LineGraph";
+import EvaluationLineGraph from "../../views/EvaluationLineGraph";
 import vexUI from "@/plugins/vex";
 import { mapState } from "vuex";
 import utils from "@/utils";
@@ -112,7 +120,7 @@ export default {
   name: 'ShowLesson',
   components: {
     'video-player': VideoPlayer,
-    'line-graph': LineGraph
+    'line-graph': EvaluationLineGraph
   },
   data () {
     return {
