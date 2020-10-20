@@ -10,14 +10,18 @@
 
 <script>
 import Plotly from "plotly.js/dist/plotly";
-// div
-// div(:id="`lineGraph${rowNum-1}`" :ref="`lineGraph${rowNum-1}`")
-// span(class="tooltip" :style="{top: tooltipTop, left:tooltipLeft}") this is a tool tip
-// Plotly(v-if="graph" :data="graph.data" :layout="graph.layout" :display-mode-bar="false" :responsive="true" @hover="onHover" @unhover="onUnhover" @click="onClick")
 
 export default {
   name: "EvaluationLineGraph",
-  props: ["transcribedNotes", "rowNum", "bpm", "onSelectNote", "isScrolling", "clickedNoteRowNum"],
+  props: [
+    "transcribedNotes",
+    "rowNum",
+    "bpm",
+    "onSelectNote",
+    "isScrolling",
+    "clickedNoteRowNum",
+    "shouldIndicateNoteClicked"
+  ],
   watch: {
     transcribedNotes: function(val) {
       this.graph = this.getGraphForNotes(val);
@@ -27,12 +31,18 @@ export default {
         this.showTooltip = false;
       }
     },
-      clickedNoteRowNum: function(val) {
-          let shapeCount = this.graph.layout.shapes.length;
-        if(val !== this.rowNum && this.graph.layout.shapes[shapeCount - 1].type !== "line") {
-            this.graph.layout.shapes.splice(-1,1)
-        }
+    clickedNoteRowNum: function(val) {
+      if (!this.shouldIndicateNoteClicked) {
+        return;
       }
+      let shapeCount = this.graph.layout.shapes.length;
+      if (
+        val !== this.rowNum &&
+        this.graph.layout.shapes[shapeCount - 1].type !== "line"
+      ) {
+        this.graph.layout.shapes.splice(-1, 1);
+      }
+    }
   },
   computed: {
     plotDiv() {
@@ -71,8 +81,16 @@ export default {
     },
     onClick(data) {
       let idx = data.points[0].pointIndex;
-      this.indicateNoteAsClicked(this.transcribedNotes[idx]);
+      if (this.shouldIndicateNoteClicked) {
+        this.indicateNoteAsClicked(this.transcribedNotes[idx]);
+      }
       this.onSelectNote(this.rowNum, idx);
+
+      //fire event for green tick
+      // FYI: to get x-position from x-coord, use the method below
+      // let xaxis = data.points[0].xaxis;
+      // let left = xaxis.l2p(this.transcribedNotes[idx].onset) + xaxis._offset;
+      this.$emit("myEvent", [this.transcribedNotes[idx].onset, this.rowNum]);
     },
     indicateNoteAsClicked(note) {
       let noteBackgroundShape = {
@@ -102,7 +120,6 @@ export default {
     },
     onHover(data) {
       let idx = data.points[0].pointIndex;
-      console.log("hover", this.rowNum, idx);
       let trace = { ...this.graph.data[0] };
       let marker = { ...this.graph.data[0].marker };
       let colors = [...this.graph.data[0].marker.color];
@@ -127,7 +144,6 @@ export default {
     },
     onUnhover(data) {
       let idx = data.points[0].pointIndex;
-      console.log("unhover", this.rowNum, idx);
       let hasComment = this.transcribedNotes[idx].comment;
 
       let note = { ...this.graph.data[0] };
@@ -332,7 +348,6 @@ export default {
       graph: null,
       noteColor: "DarkSlateGray",
       highlightedNoteColor: "#e0e5e5",
-      selectedNoteColor: "",
       commentedNoteColor: "DarkSeaGreen"
     };
   }
@@ -343,10 +358,6 @@ export default {
 <style scoped>
 .tooltip {
   z-index: 200;
-  /*background: #c8c8c8;*/
-  /*padding: 10px;*/
   position: absolute;
-  /*width: 200px;*/
-  /*height: 100px;*/
 }
 </style>
