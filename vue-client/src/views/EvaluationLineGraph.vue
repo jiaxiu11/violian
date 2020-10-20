@@ -17,7 +17,7 @@ import Plotly from "plotly.js/dist/plotly";
 
 export default {
   name: "EvaluationLineGraph",
-  props: ["transcribedNotes", "rowNum", "bpm", "onSelectNote", "isScrolling"],
+  props: ["transcribedNotes", "rowNum", "bpm", "onSelectNote", "isScrolling", "clickedNoteRowNum"],
   watch: {
     transcribedNotes: function(val) {
       this.graph = this.getGraphForNotes(val);
@@ -26,7 +26,13 @@ export default {
       if (val) {
         this.showTooltip = false;
       }
-    }
+    },
+      clickedNoteRowNum: function(val) {
+          let shapeCount = this.graph.layout.shapes.length;
+        if(val !== this.rowNum && this.graph.layout.shapes[shapeCount - 1].type !== "line") {
+            this.graph.layout.shapes.splice(-1,1)
+        }
+      }
   },
   computed: {
     plotDiv() {
@@ -65,11 +71,38 @@ export default {
     },
     onClick(data) {
       let idx = data.points[0].pointIndex;
+      this.indicateNoteAsClicked(this.transcribedNotes[idx]);
       this.onSelectNote(this.rowNum, idx);
     },
+    indicateNoteAsClicked(note) {
+      let noteBackgroundShape = {
+        type: "rect",
+        xref: "x",
+        yref: "paper",
+        x0: note.onset,
+        y0: 0,
+        x1: note.onset + note.duration,
+        y1: 1,
+        fillcolor: "#d3d3d3",
+        opacity: 0.2,
+        line: {
+          width: 0
+        }
+      };
+      let shapeCount = this.graph.layout.shapes.length;
+      if (this.graph.layout.shapes[shapeCount - 1].type === "line") {
+        this.graph.layout.shapes.push(noteBackgroundShape);
+      } else {
+        this.$set(
+          this.graph.layout.shapes,
+          shapeCount - 1,
+          noteBackgroundShape
+        );
+      }
+    },
     onHover(data) {
-      console.log(data);
       let idx = data.points[0].pointIndex;
+      console.log("hover", this.rowNum, idx);
       let trace = { ...this.graph.data[0] };
       let marker = { ...this.graph.data[0].marker };
       let colors = [...this.graph.data[0].marker.color];
@@ -87,8 +120,6 @@ export default {
       let left = xaxis.l2p(data.points[0].x) + xaxis._offset;
       let top = yaxis.l2p(data.points[0].y) + lineGraphBoundingRect.top - 70;
 
-      console.log(left);
-      console.log(top);
       this.selectedNote = this.transcribedNotes[idx];
       this.tooltipLeft = left;
       this.tooltipTop = top;
@@ -96,6 +127,7 @@ export default {
     },
     onUnhover(data) {
       let idx = data.points[0].pointIndex;
+      console.log("unhover", this.rowNum, idx);
       let hasComment = this.transcribedNotes[idx].comment;
 
       let note = { ...this.graph.data[0] };
