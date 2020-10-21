@@ -19,13 +19,12 @@
                 v-card(flat tile)
                   v-container
                     
-                    v-row
-                      v-col
-                        h1 Do A Live Recording Here:
-                    audio-recorder()
                     
+                    h1 Do A Live Recording Here:
+                    audio-recorder(:currEx="this.lesson.exercises[0]")
                     
-                    h1 Or Upload Your Audio File Here:
+                    v-row(style="margin-top: 50px;")
+                      h1 Or Upload Your Audio File Here:
                     v-row
                       v-col(cols="6")
                         v-file-input(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense)

@@ -1,19 +1,22 @@
-<template lang="pug">
-  div(style="font-size:16px !important;")
-    v-row
-      v-btn(:id="`recButton`" :class="`notRec`" @click="onClick" style="margin-top: 2px;background-color:red;")
-      div(style="margin-left: 10px; margin-top: 15px; ") {{formattedElapsedTime}}
-    v-row
-      v-col
-        div(:class="`sound-clips`")
-        div(:class="`main-controls`")
+<template>
+  <div id="inner">
+    <section class="main-controls">
+      <button id="recButton" class="notRec" @click="onClick" style="margin-top: 2px;"></button>
+      <div style="margin-left: 10px; margin-top: 15px; "> {{ formattedElapsedTime }} </div>
+
+    </section>
+
+    <section class="sound-clips">
+    </section>
+  </div>
 </template>
 
 <script>
 /* eslint-disable */
 export default {
   name: 'AudioRecorder',
-  
+  props: ['currEx'],
+
   data () {
     return {
       // exercise info
@@ -22,9 +25,12 @@ export default {
       chunks: [],
       mediaRecorder: null,
       isRecording: false,
+      selectedAudioFile: null,
+      soundClips: null,
 
+      // timer
       elapsedTime: 0,
-      timer: undefined
+      timer: null,
 
     }
   },
@@ -80,8 +86,11 @@ export default {
     onStop() {
       this.stopTimer()
       this.mediaRecorder.stop();
-      console.log(this.mediaRecorder.state);
-      console.log("recorder stopped");
+      console.log(this.mediaRecorder.state, ", Recorder Stopped");
+      const soundClips = document.querySelector('.sound-clips');
+      for (var x in soundClips.childNodes) {
+        console.log(x)
+      }
     },
 
     onSuccess(stream) {
@@ -102,23 +111,40 @@ export default {
         const clipName = prompt('Enter a name for your sound clip?','My recording');
 
         const clipContainer = document.createElement('article');
-        const clipLabel = document.createElement('p');
+        const clipLabel = document.createElement('label');
         const audio = document.createElement('audio');
         const deleteButton = document.createElement('button');
+        const row = document.createElement('row');
+        const radioInput = document.createElement('input');
+        
 
         clipContainer.classList.add('clip');
         audio.setAttribute('controls', '');
         deleteButton.textContent = 'Delete';
         deleteButton.className = 'delete';
-
         if(clipName === null) {
           clipLabel.textContent = 'My unnamed clip';
         } else {
           clipLabel.textContent = clipName;
         }
+        
+        // clipLabel.innerHTML = "<style>label {margin-bottom:50px;background-color: blue;}</style>";
+        // var sheet2 = document.createElement('style')
+        // sheet2.innerHTML = "button {margin-bottom:50px;background-color: blue;}";
+        // // clipLabel.appendChild(sheet)
+        // deleteButton.appendChild(sheet2)
+        // clipLabel.innerHTML = "<style>{ margin-bottom:10px;}</style>";
+        // deleteButton.innerHTML = "<style>button { float:right; }</style>";
 
-        clipContainer.appendChild(audio);
+
+        // row.appendChild(clipLabel);
+        // row.appendChild(deleteButton);
+        // clipContainer.appendChild(row);
+
+        clipContainer.appendChild(radioInput);
         clipContainer.appendChild(clipLabel);
+        clipContainer.appendChild(audio);
+
         clipContainer.appendChild(deleteButton);
         soundClips.appendChild(clipContainer);
 
@@ -129,6 +155,15 @@ export default {
         const audioURL = window.URL.createObjectURL(blob);
         audio.src = audioURL;
         console.log("recorder stopped", audioURL);
+
+        radioInput.setAttribute('type', 'radio');
+        radioInput.setAttribute('name', audio);
+        radioInput.setAttribute('checked', true);
+        radioInput.onclick = function() {
+          this.selectedAudioFile = this.name;
+          console.log(this.selectedAudioFile);
+        }
+        clipLabel.classList.add('label')
 
         deleteButton.onclick = function(e) {
           let evtTgt = e.target;
@@ -153,8 +188,25 @@ export default {
       }
       this.mediaRecorder = mediaRecorder;
     },
+
     onError(err){
       console.log(err)
+    },
+
+    async submitAudio (event) {
+      // let feedback = (await RecordingService.getFeedback(5)).data.recording.transcription
+      // this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
+      if (this.newAudio) {
+        let formData = new FormData()
+        formData.set('eid', this.currEx.id)
+        formData.append('audio', this.newAudio)
+        let recording = (await RecordingService.create(formData)).data.recording
+        let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
+        this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
+        console.log(transcribedNotes)
+      } else {
+        alert('Please input an audio file to gain feedback')
+      }
     },
 
   }
@@ -194,6 +246,90 @@ button {
 	90%{
 		box-shadow: 0px 0px 5px 13px rgba(173,0,0,0);
 	}
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.8rem;
+}
+
+.wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.main-controls {
+  padding: 0.5rem 0;
+}
+
+.label {
+  font-size: 20px;
+  background-color: #f00;
+  margin-bottom: 30px;
+}
+
+
+
+button:hover, button:focus {
+  box-shadow: inset 0px 0px 10px rgba(255, 255, 255, 1);
+  background: rgb(205, 23, 23);
+}
+
+
+/* Make the clips use as much space as possible, and
+ * also show a scrollbar when there are too many clips to show
+ * in the available space */
+.sound-clips {
+  flex: 1;
+  overflow: auto;
+}
+
+section, article {
+  display: block;
+}
+
+.clip {
+  padding-bottom: 1rem;
+}
+
+audio {
+  width: 100%;
+  display: block;
+  margin: 1rem auto 0.5rem;
+}
+
+.clip p {
+  display: inline-block;
+  font-size: 1rem;
+}
+
+.clip button {
+  font-size: 1rem;
+  float: right;
+}
+
+button.delete {
+  margin: 0 auto;
+  background: #f00;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+#inner {
+  /* width: 50%; */
+  margin: 0 auto;
 }
 
 </style>
