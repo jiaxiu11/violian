@@ -48,7 +48,7 @@
                               :onSelectNote="(rowNum,noteIdx)=>{}"
                               :isScrolling="false"
                               :shouldIndicateNoteClicked="false"
-                              :clickedNoteRowNum="0"
+                              :clickedNoteOnset=null
                           )
 
                     v-row

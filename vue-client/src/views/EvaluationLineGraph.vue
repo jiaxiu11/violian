@@ -19,7 +19,7 @@ export default {
     "bpm",
     "onSelectNote",
     "isScrolling",
-    "clickedNoteRowNum",
+    "clickedNoteOnset",
     "shouldIndicateNoteClicked"
   ],
   watch: {
@@ -31,16 +31,34 @@ export default {
         this.showTooltip = false;
       }
     },
-    clickedNoteRowNum: function(val) {
-      if (!this.shouldIndicateNoteClicked) {
+    clickedNoteOnset: function(val) {
+      if (!this.shouldIndicateNoteClicked || this.clickedNote == null) {
         return;
       }
+      if (val !== this.clickedNote.onset) {
+        this.clickedNote = null;
+      }
+    },
+    clickedNote: function(val) {
       let shapeCount = this.graph.layout.shapes.length;
+
       if (
-        val !== this.rowNum &&
+        val === null &&
         this.graph.layout.shapes[shapeCount - 1].type !== "line"
       ) {
         this.graph.layout.shapes.splice(-1, 1);
+        return;
+      }
+
+      let noteBackgroundShape = this.getShapeToIndicateNoteAsClicked(val)[0];
+      if (this.graph.layout.shapes[shapeCount - 1].type === "line") {
+        this.graph.layout.shapes.push(noteBackgroundShape);
+      } else {
+        this.$set(
+          this.graph.layout.shapes,
+          shapeCount - 1,
+          noteBackgroundShape
+        );
       }
     }
   },
@@ -82,7 +100,7 @@ export default {
     onClick(data) {
       let idx = data.points[0].pointIndex;
       if (this.shouldIndicateNoteClicked) {
-        this.indicateNoteAsClicked(this.transcribedNotes[idx]);
+        this.clickedNote = this.transcribedNotes[idx];
       }
       this.onSelectNote(this.rowNum, idx);
 
@@ -91,32 +109,6 @@ export default {
       // let xaxis = data.points[0].xaxis;
       // let left = xaxis.l2p(this.transcribedNotes[idx].onset) + xaxis._offset;
       this.$emit("myEvent", [this.transcribedNotes[idx].onset, this.rowNum]);
-    },
-    indicateNoteAsClicked(note) {
-      let noteBackgroundShape = {
-        type: "rect",
-        xref: "x",
-        yref: "paper",
-        x0: note.onset,
-        y0: 0,
-        x1: note.onset + note.duration,
-        y1: 1,
-        fillcolor: "#d3d3d3",
-        opacity: 0.2,
-        line: {
-          width: 0
-        }
-      };
-      let shapeCount = this.graph.layout.shapes.length;
-      if (this.graph.layout.shapes[shapeCount - 1].type === "line") {
-        this.graph.layout.shapes.push(noteBackgroundShape);
-      } else {
-        this.$set(
-          this.graph.layout.shapes,
-          shapeCount - 1,
-          noteBackgroundShape
-        );
-      }
     },
     onHover(data) {
       let idx = data.points[0].pointIndex;
@@ -135,7 +127,7 @@ export default {
       let xaxis = data.points[0].xaxis;
       let yaxis = data.points[0].yaxis;
       let left = xaxis.l2p(data.points[0].x) + xaxis._offset;
-      let top = yaxis.l2p(data.points[0].y) + lineGraphBoundingRect.top - 70;
+      let top = yaxis.l2p(data.points[0].y) + lineGraphBoundingRect.top;
 
       this.selectedNote = this.transcribedNotes[idx];
       this.tooltipLeft = left;
@@ -261,6 +253,26 @@ export default {
         note.comment ? this.commentedNoteColor : this.noteColor
       );
     },
+    getShapeToIndicateNoteAsClicked(note) {
+      if (!note) {
+        return [];
+      }
+      let noteBackgroundShape = {
+        type: "rect",
+        xref: "x",
+        yref: "paper",
+        x0: note.onset,
+        y0: 0,
+        x1: note.onset + note.duration,
+        y1: 1,
+        fillcolor: "#d3d3d3",
+        opacity: 0.2,
+        line: {
+          width: 0
+        }
+      };
+      return [noteBackgroundShape];
+    },
     getGraphForNotes(notes) {
       console.log("redraw");
       console.log(notes);
@@ -319,7 +331,9 @@ export default {
             t: 20,
             pad: 8
           },
-          shapes: this.getBarDividers(this.rowNum - 1)
+          shapes: this.getBarDividers(this.rowNum - 1).concat(
+            this.getShapeToIndicateNoteAsClicked(this.selectedNote)
+          )
         },
         config: {
           displayModeBar: false,
@@ -335,6 +349,7 @@ export default {
   data() {
     return {
       selectedNote: null,
+      clickedNote: null,
       plotContainerId: `lineGraphContainer${this.rowNum - 1}`,
       plotDivId: `lineGraph${this.rowNum - 1}`,
       showTooltip: false,

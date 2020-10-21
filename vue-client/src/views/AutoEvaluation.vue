@@ -6,7 +6,7 @@
         v-divider
         v-card-text(class="commentCardScores" v-on:scroll.passive='onLineGraphScroll')
             div(v-for="(row, idx) in notesByRow" :key="idx")
-                EvaluationLineGraph( :bpm="bpm" :transcribedNotes="row" :rowNum="idx+1" :onSelectNote="onSelectNote" :isScrolling="isScrolling" :clickedNoteRowNum="selectedRowNum" :shouldIndicateNoteClicked="true")
+                EvaluationLineGraph( :bpm="bpm" :transcribedNotes="row" :rowNum="idx+1" :onSelectNote="onSelectNote" :isScrolling="isScrolling" :clickedNoteOnset="selectedRowNum !== null && selectedIndex !== null ? notesByRow[selectedRowNum-1][selectedIndex].onset : null" :shouldIndicateNoteClicked="true")
 </template>
 
 <script>
