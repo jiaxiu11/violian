@@ -206,6 +206,7 @@ export default {
       // let feedback = (await RecordingService.getFeedback(5)).data.recording.transcription
       // this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
       if (this.newAudio) {
+        console.log(this.newAudio);
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
         formData.append('audio', this.newAudio)

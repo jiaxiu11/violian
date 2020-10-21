@@ -1,5 +1,6 @@
 <template>
   <div id="inner">
+    <a id="currEx" style="display:none">{{ currEx.id }}</a>
     <section class="main-controls">
       <button id="recButton" class="notRec" @click="onClick" style="margin-top: 10px;"></button>
       <div style="margin-left: 15px; margin-top: 10px; "> {{ formattedElapsedTime }} </div>
@@ -9,7 +10,7 @@
     <section class="sound-clips">
     </section>
 
-    <button class="submit" v-show="showSubmit" @click="submitAudio" style="margin-top: 2px;">Upload Recording</button>
+    <!-- <button class="submit" v-show="showSubmit" @click="submitAudio" style="margin-top: 2px;">Upload Recording</button> -->
   </div>
 </template>
 
@@ -30,7 +31,8 @@ export default {
       isRecording: false,
       selectedAudioFile: null,
       soundClips: null,
-      recordingCounter: 0,
+      recordings: {},
+      recordingId: 0,
       showSubmit: false,
 
       // timer
@@ -51,7 +53,6 @@ export default {
 
   methods: {
     
-
     startTimer() {
       this.timer = setInterval(() => {
         this.elapsedTime += 1000;
@@ -64,7 +65,7 @@ export default {
       clearInterval(this.timer);
     },
 
-    onClick() {
+    onClick(e) {
       const record = document.getElementById('recButton');
       if (record.classList.contains('notRec')) {
         record.classList.remove('notRec');
@@ -104,19 +105,19 @@ export default {
       console.log("Recorder state: ", mediaRecorder.state);
 
       mediaRecorder.onstop = function(e) {
-        console.log("data available after MediaRecorder.stop() called.");
-
         const clipName = prompt('Enter a name for your sound clip?','My recording');
 
         const clipContainer = document.createElement('article');
         const clipLabel = document.createElement('label');
         const audio = document.createElement('audio');
         const deleteButton = document.createElement('button');
+        const uploadButton = document.createElement('button');
         const radioInput = document.createElement('input');
         
         clipContainer.classList.add('clip');
         clipContainer.style.margin = '0 auto'
         audio.setAttribute('controls', '');
+        uploadButton.textContent = 'UPLOAD THIS';
         deleteButton.textContent = 'X';
         deleteButton.className = 'delete';
         clipLabel.className = 'date';
@@ -128,9 +129,19 @@ export default {
         clipContainer.style.display = 'block';
         clipLabel.style.color = 'blue';
         clipLabel.style.padding = '10px'
+
+        uploadButton.style.backgroundColor = '#ec5252';
+        // uploadButton.style.position = 'relative'
+        // uploadButton.style.top = '0px'
+        uploadButton.style.padding = '0.3em 1.2em'
+        uploadButton.style.margin = '0.3em 0.3em 0'
+        uploadButton.style.borderRadius = '2em'
+        uploadButton.style.color = 'white'
+        uploadButton.style.fontWeight = 'bold'
+        uploadButton.style.boxSizing = 'border-box'
+
         deleteButton.style.margin = '10px'
         deleteButton.style.color = 'red';
-        // deleteButton.style.border = '1';
         deleteButton.style.fontWeight = 'bold';
         deleteButton.style.fontSize = '30px';
         deleteButton.style.position = 'relative'
@@ -146,12 +157,16 @@ export default {
         } else {
           clipLabel.textContent = clipName;
         }
-
-        clipContainer.appendChild(radioInput);
-        clipContainer.appendChild(clipLabel);
-        clipContainer.appendChild(audio);
+        // Not using radio input
+        // radioInput.setAttribute('type', 'radio');
+        // radioInput.setAttribute('name', 'radio');
+        // radioInput.setAttribute('value', 1);
+        // clipContainer.appendChild(radioInput);
 
         clipContainer.appendChild(deleteButton);
+        clipContainer.appendChild(clipLabel);
+        clipContainer.appendChild(audio);
+        clipContainer.appendChild(uploadButton);
         soundClips.appendChild(clipContainer);
 
         audio.controls = true;
@@ -161,7 +176,6 @@ export default {
         audio.src = audioURL;
         const fileName = clipLabel.textContent.concat(".ogg");
         const file = new File([blob], fileName);
-        const fileURL = window.URL.createObjectURL(file);
 
         // Download file during testing
         // const url = window.URL.createObjectURL(file);
@@ -173,17 +187,29 @@ export default {
         // a.click();
         // console.log("A", a)
         // window.URL.revokeObjectURL(url);
-        // console.log("recorder stopped");
 
-        radioInput.setAttribute('type', 'radio');
-        radioInput.setAttribute('name', 'radio');
-        radioInput.setAttribute('value', file);
 
-        clipLabel.classList.add('label')
 
         deleteButton.onclick = function(e) {
           let evtTgt = e.target;
           evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+        }
+
+        uploadButton.onclick = async function() {
+          if (file) {
+            console.log(file)
+            let formData = new FormData()
+            const currExId = document.getElementById("currEx").innerText
+            formData.set('eid', currExId)
+            formData.append('audio', file);
+            let recording = (await RecordingService.create(formData)).data.recording
+            let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
+            const transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
+            console.log('transcribed notes: ', transcribedNotes)
+          } else {
+            alert('Please input an audio file to gain feedback')
+          }
+          
         }
 
         clipLabel.onclick = function() {
@@ -201,6 +227,7 @@ export default {
         chunks.push(e.data);
       }
 
+
       this.mediaRecorder = mediaRecorder;
     },
 
@@ -208,39 +235,11 @@ export default {
       console.log(err)
     },
 
-    async submitAudio (event) {
-      var radios = document.getElementsByName('radio');
-
-      for (var i = 0; i < radios.length; i++) {
-        if (radios[i].checked) {
-          this.selectedAudioFile = radios[i].value
-          break;
-        }
-      }
-      console.log('selectedAudioFile: ', this.selectedAudioFile, this.currEx.id);
-
-      if (this.selectedAudioFile) {
-        let formData = new FormData()
-        formData.set('eid', this.currEx.id)
-        formData.append('audio', this.selectedAudioFile);
-        // for (var key of formData.entries()) {
-        //   console.log(key[0] + ', ' + key[1]);
-        // }
-        let recording = (await RecordingService.create(formData)).data.recording
-        let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
-        const transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
-        console.log('transcribed notes: ', transcribedNotes)
-      } else {
-        alert('Please input an audio file to gain feedback')
-      }
-    },
-
   }
 }
 </script>
 
 <style scoped>
-/* @import '/assets/styles/recorder.css'; */
 
 #recButton {
 	width: 35px;
@@ -258,24 +257,12 @@ button.submit {
   margin:0 0.3em 0.3em 0;
   border-radius:2em;
   box-sizing: border-box;
+  font-family:'Roboto',sans-serif;
   font-weight:300;
   color:#FFFFFF;
   background-color:#ec5252;
   text-align:center;
 }
-
-/* button.submit {
- padding:0.3em 1.2em;
- margin:0 0.3em 0.3em 0;
- border-radius:2em;
- box-sizing: border-box;
- text-decoration:none;
- font-family:'Roboto',sans-serif;
- font-weight:300;
- color:#FFFFFF;
- background-color:#4eb5f1;
- text-align:center;
-} */
 
 button.submit:hover{
   background-color:#4b93bd;
