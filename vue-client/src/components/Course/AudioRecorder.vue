@@ -3,6 +3,7 @@
     <a id="currEx" style="display:none">{{ currEx.id }}</a>
     <section class="main-controls">
       <button id="recButton" class="notRec" @click="onClick" style="margin-top: 10px;"></button>
+      <div style="margin-left: 15px; margin-top: 10px; "> {{ countDown }} </div>
       <div style="margin-left: 15px; margin-top: 10px; "> {{ formattedElapsedTime }} </div>
 
     </section>
@@ -39,6 +40,10 @@ export default {
       elapsedTime: 0,
       timer: null,
 
+      //countdown
+      countDown: 4,
+      defaultCountDown: 4
+
     }
   },
   computed: {
@@ -52,7 +57,29 @@ export default {
   },
 
   methods: {
-    
+    countDownTimer() {
+        if(this.countDown > 0) {
+            setTimeout(() => {
+                this.countDown -= 1
+                this.countDownTimer()
+            }, 1000)
+        }
+
+        if (this.countDown == 0) {
+          const record = document.getElementById('recButton');
+          if (record.classList.contains('notRec')) {
+            record.classList.remove('notRec');
+            record.classList.add('Rec');
+          } else {
+            record.classList.add('notRec');
+            record.classList.remove('Rec');
+          }
+
+          this.isRecording ? this.onStop() : this.onStart()
+          this.isRecording = !this.isRecording;
+        }
+    },
+
     startTimer() {
       this.timer = setInterval(() => {
         this.elapsedTime += 1000;
@@ -66,29 +93,23 @@ export default {
     },
 
     onClick(e) {
-      const record = document.getElementById('recButton');
-      if (record.classList.contains('notRec')) {
-        record.classList.remove('notRec');
-        record.classList.add('Rec');
-      } else {
-        record.classList.add('notRec');
-        record.classList.remove('Rec');
-      }
-
-      this.isRecording ? this.onStop() : this.onStart()
-      this.isRecording = !this.isRecording;
+      this.countDownTimer()
+      
+      
     },
 
     onStart() {
-      
+      // this.countDownTimer()
       this.startTimer()
       const record = document.getElementById('recButton');
       navigator.mediaDevices.getUserMedia(this.constraints).then(this.onSuccess, this.onError);
+    
     },
 
     onStop() {
-      this.stopTimer()
+      this.stopTimer();
       this.mediaRecorder.stop();
+      this.countDown = this.defaultCountDown;
       console.log("Recorder state: ", this.mediaRecorder.state);
       const soundClips = document.querySelector('.sound-clips');
     },
