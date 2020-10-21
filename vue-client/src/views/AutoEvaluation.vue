@@ -1,304 +1,141 @@
 <template lang="pug">
-    <div>
-    <Plotly :data="data" :layout="layout" :display-mode-bar="false" :static-plot="true" :responsive="true"></Plotly>
-    <Plotly v-for="graph in graphs" :data="graph.data" :layout="graph.layout" :display-mode-bar="false" :static-plot="true" :responsive="true"></Plotly>
-    </div>
+    v-card.mx-10.mt-10(height="600px" class="commentCard")
+        v-card-title Click on a note to leave comment
+        v-card-subtitle(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
+        v-text-field.mx-10(label="comment" hint="comment on a note" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
+        v-divider
+        v-card-text(class="commentCardScores" v-on:scroll.passive='onLineGraphScroll')
+            div(v-for="(row, idx) in notesByRow" :key="idx")
+                EvaluationLineGraph( :bpm="bpm" :transcribedNotes="row" :rowNum="idx+1" :onSelectNote="onSelectNote" :isScrolling="isScrolling" :clickedNoteRowNum="selectedRowNum" :shouldIndicateNoteClicked="true")
 </template>
 
 <script>
-import { Plotly } from "vue-plotly";
+import EvaluationLineGraph from "./EvaluationLineGraph";
 export default {
   name: "AutoEvaluation",
   components: {
-    Plotly
+    EvaluationLineGraph
   },
   methods: {
-    getSecondsPerRow() {
-      let timeSignature = 4;
-      let bpm = 60;
-      let barsPerRow = 4;
-      return (60 / bpm) * timeSignature * barsPerRow;
-    },
-    getNumberFromMusicNote(noteNumber) {
-      let octave = noteNumber[1] - "0";
-      let note = noteNumber[0].charCodeAt(0) - "C".charCodeAt(0);
-      if (note < 0) {
-        note = note + 8;
+    onLineGraphScroll() {
+      clearTimeout(this.scrollTimeout);
+
+      if (!this.isScrolling) {
+        this.isScrolling = true;
       }
-      return octave * 8 + note;
+
+      this.scrollTimeout = setTimeout(() => {
+        this.isScrolling = false;
+      }, 200);
     },
-    getLineSegmentForMusicNote(note) {
-      let y = this.getLineSegmentYValForMusicNote(note);
-      return {
-        type: "line",
-        x0: note.onset,
-        y0: y,
-        x1: note.onset + note.duration,
-        y1: y,
-        line: {
-          color: "rgb(55, 128, 191)",
-          width: 3
-        }
-      };
-    },
-    getLineSegmentYValForMusicNote(note) {
-      let minY = this.getNumberFromMusicNote(this.minNoteNumber);
-      let maxY = this.getNumberFromMusicNote(this.maxNoteNumber);
-      let y = this.getNumberFromMusicNote(note.noteNumber);
-      return (
-        ((y - minY) / (maxY - minY)) *
-        (this.maxNoteNumber[1] - this.minNoteNumber[1])
-      );
-    },
-    splitIntoRows(notes) {
-      let timePerRow = this.getSecondsPerRow();
-      let newRowStartTime = 0;
-      let rows = [];
-      rows.push([]);
-      for (let i = 0; i < notes.length; i++) {
-        let note = notes[i];
-        if (note.onset < newRowStartTime + timePerRow) {
-          if (note.onset + note.duration <= newRowStartTime + timePerRow) {
-            rows[rows.length - 1].push(note);
-          } else {
-            // split a note that lasts across two rows into two notes
-            let noteCopy = { ...note };
-            noteCopy.onset = newRowStartTime + timePerRow;
-            noteCopy.duration =
-              note.onset + note.duration - (newRowStartTime + timePerRow);
-            note.duration = note.duration - noteCopy.duration;
-            rows[rows.length - 1].push(note);
-            notes[i] = noteCopy;
-            newRowStartTime = newRowStartTime + timePerRow;
-            rows.push([]);
-            i--;
-          }
-        } else {
-          newRowStartTime = newRowStartTime + timePerRow;
-          rows.push([]);
-          i--;
-        }
+    onSelectNote(rowNum, noteIndex) {
+      if (this.selectedIndex !== noteIndex || this.selectedRowNum !== rowNum) {
+        this.selectedIndex = noteIndex;
+        this.selectedRowNum = rowNum;
+        this.comment = this.notesByRow[rowNum - 1][noteIndex].comment ?? null;
       }
-      return rows;
     },
-    getTickValsForRow(rowIndex) {
-      let ticks = [];
-      for (let i = 0; i <= this.barsPerRow * this.timeSignature; i++) {
-        ticks.push(i);
-      }
-      return ticks.map(
-        tick => tick + rowIndex * this.barsPerRow * this.timeSignature
-      );
-    },
-    getAnnotationXValsForNotes(notes) {
-      return notes.map(note => note.onset + note.duration / 2);
-    },
-    getAnnotationYValsForNotes(notes) {
-      return notes.map(note => {
-        let yVal = this.getLineSegmentYValForMusicNote(note) + 0.3;
-        return yVal <= this.maxNoteNumber[1] - this.minNoteNumber[1]
-          ? yVal
-          : yVal - 0.7;
-      });
-    },
-    getAnnotationsForNotes(notes) {
-      return notes.map(note => note.noteNumber);
-    },
-    getBarDividers(rowIndex) {
-      let y0 = 0;
-      let y1 = this.maxNoteNumber[1] - this.minNoteNumber[1];
-      let barDividers = [];
-      for (let i = 1; i <= this.barsPerRow; i++) {
-        let x =
-          i * this.timeSignature +
-          rowIndex * this.timeSignature * this.barsPerRow;
-        let divider = {
-          type: "line",
-          x0: x,
-          y0: y0,
-          x1: x,
-          y1: y1,
-          line: {
-            color: "#bdbdbd",
-            width: 2
-          }
-        };
-        barDividers.push(divider);
-      }
-      return barDividers;
-    },
-    getGraphsForNotes(notes) {
-      let rows = this.splitIntoRows(notes);
-      let graphs = [];
-      for (let i = 0; i < rows.length; i++) {
-        let row = rows[i];
-        let graph = {
-          data: [
-            {
-              x: this.getAnnotationXValsForNotes(row),
-              y: this.getAnnotationYValsForNotes(row),
-              text: this.getAnnotationsForNotes(row),
-              mode: "text"
-            }
-          ],
-          layout: {
-            xaxis: {
-              zeroline: false,
-              range: [
-                i * this.secondsPerRow,
-                (i + 1) * this.secondsPerRow + 0.1
-              ],
-              tickvals: this.getTickValsForRow(i),
-              tickfont: {
-                family: "Old Standard TT, serif",
-                size: 10,
-                color: "Brown"
-              }
-            },
-            yaxis: {
-              range: [0, 3.1],
-              tickvals: [0, 1, 2, 3],
-              ticktext: ["C3", "C4", "C5", "C6"],
-              tickfont: {
-                family: "Old Standard TT, serif",
-                size: 10,
-                color: "Brown"
-              }
-            },
-            width: 1200,
-            height: 250,
-            shapes: row
-              .map(note => this.getLineSegmentForMusicNote(note))
-              .concat(this.getBarDividers(i))
-          }
-        };
-        graphs.push(graph);
-      }
-      return graphs;
+    onCommentChange(data) {
+      let rowIndex = this.selectedRowNum - 1;
+      let row = [...this.notesByRow[rowIndex]];
+      let note = { ...this.notesByRow[rowIndex][this.selectedIndex] };
+      note.comment = data;
+      row[this.selectedIndex] = note;
+      this.$set(this.notesByRow, rowIndex, row);
     }
   },
-
   data() {
     return {
-      minNoteNumber: "C3",
-      maxNoteNumber: "C6",
+      scrollTimeout: null,
+      isScrolling: false,
+      comment: null,
+      selectedRowNum: null,
+      selectedIndex: null,
       bpm: 60,
-      timeSignature: 4,
-      barsPerRow: 4,
-      secondsPerRow: this.getSecondsPerRow(),
+      notesByRow: [],
       transcribedNotes: [
         {
           onset: 0.3,
-          noteNumber: "C6",
-          duration: 5
+          note: "C6",
+          duration: 1
+        },
+        {
+          onset: 1.3,
+          note: "B5",
+          duration: 0.8
+        },
+        {
+          onset: 2.4,
+          note: "A5",
+          duration: 0.1
+        },
+        {
+          onset: 2.5,
+          note: "G4",
+          duration: 0.5
         },
         {
           onset: 5.3,
-          noteNumber: "A3",
-          duration: 4
+          note: "A3",
+          duration: 2
+        },
+        {
+          onset: 7.3,
+          note: "B3",
+          duration: 1
+        },
+        {
+          onset: 8.5,
+          note: "C3",
+          duration: 0.5
         },
         {
           onset: 10,
-          noteNumber: "D3",
-          duration: 8
+          note: "D3",
+          duration: 2
         },
         {
-          onset: 18,
-          noteNumber: "E3",
-          duration: 5
-        },
-        {
-          onset: 23,
-          noteNumber: "F3",
-          duration: 4
-        },
-        {
-          onset: 28,
-          noteNumber: "G3",
-          duration: 5
-        },
-        {
-          onset: 33,
-          noteNumber: "A3",
+          onset: 12,
+          note: "C6",
           duration: 3
         }
-      ],
-      graphs: [],
-      data: [
-        {
-          x: [0.75, 1.8],
-          y: [0.2, 0.6],
-          text: ["A1", "A2"],
-          mode: "text"
-        }
-      ],
-      layout: {
-        title: "My graph",
-        xaxis: {
-          range: [0, 4]
-        },
-        yaxis: {
-          range: [0, 3],
-          tickvals: [0, 1, 2, 3],
-          ticktext: ["C3", "C4", "C5", "C6"]
-        },
-        width: 400,
-        height: 250,
-        shapes: [
-          {
-            type: "line",
-            x0: 0.5,
-            y0: 0.5,
-            x1: 1,
-            y1: 0.5,
-            line: {
-              color: "rgb(55, 128, 191)",
-              width: 3
-            }
-          },
-          {
-            type: "line",
-            x0: 1.5,
-            y0: 1,
-            x1: 2.2,
-            y1: 1,
-            line: {
-              color: "rgb(127, 255, 212)",
-              width: 3
-            }
-          },
-          {
-            type: "line",
-            x0: 2.2,
-            y0: 1.5,
-            x1: 3,
-            y1: 1.5,
-            line: {
-              color: "rgb(255, 127, 80)",
-              width: 3
-            },
-            name: "A4"
-          },
-          {
-            type: "line",
-            x0: 3,
-            y0: 1,
-            x1: 3.3,
-            y1: 1,
-            line: {
-              color: "rgb(255, 215, 0)",
-              width: 3
-            }
-          }
-        ]
-      }
+      ]
     };
   },
-  created() {
-    this.graphs = this.getGraphsForNotes(this.transcribedNotes);
-  },
+  mounted() {
+    //TODO: split notes into rows
+    let secondRow = this.transcribedNotes.map(note => {
+      let noteCopy = { ...note };
+      let onset = note.onset;
+      noteCopy.onset = onset + 16;
+      return noteCopy;
+    });
+    let thirdRow = this.transcribedNotes.map(note => {
+      let noteCopy = { ...note };
+      let onset = note.onset;
+      noteCopy.onset = onset + 32;
+      return noteCopy;
+    });
+    let fourthRow = this.transcribedNotes.map(note => {
+      let noteCopy = { ...note };
+      let onset = note.onset;
+      noteCopy.onset = onset + 48;
+      return noteCopy;
+    });
+    this.notesByRow = [this.transcribedNotes, secondRow, thirdRow, fourthRow];
+  }
 };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped></style>
+<style scoped>
+.commentCard {
+  display: flex !important;
+  flex-direction: column;
+}
+
+.commentCardScores {
+  flex-grow: 1;
+  overflow: auto;
+}
+</style>
