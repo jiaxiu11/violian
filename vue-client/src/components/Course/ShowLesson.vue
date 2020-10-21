@@ -10,6 +10,7 @@
             v-col.pa-0
               video-player(:exercise="this.lesson.exercises[0]" :videoSrc="videoSrc" v-if="isVideoContent")
           
+
           v-container 
             v-tabs(v-model='tab' color="indigo")
               v-tabs-slider
@@ -17,10 +18,12 @@
               v-tab-item(value="feedback")
                 v-card(flat tile)
                   v-container
-                    v-row
-                      v-col
-                        h1 Submit your practice audio to get feedback!
-
+                    
+                    h1 Do A Live Recording Here:
+                    audio-recorder(:currEx="this.lesson.exercises[0]")  
+                    
+                    v-row(style="margin-top: 20px;")
+                      h1 Or Upload Your Audio File Here:
                     v-row
                       v-col(cols="6")
                         v-file-input(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense)
@@ -134,15 +137,19 @@ import VideoPlayer from "@/components/Course/VideoPlayer"
 import ThreadService from "@/services/ThreadService"
 import _ from 'lodash'
 import RecordingService from "@/services/RecordingService"
+import AudioRecorder from "@/components/Course/AudioRecorder"
+
 
 export default {
   name: 'ShowLesson',
   components: {
     'video-player': VideoPlayer,
+    'audio-recorder': AudioRecorder,
     'line-graph': EvaluationLineGraph
   },
   data () {
     return {
+
       course: null,
       lesson: null,
 
@@ -245,6 +252,7 @@ export default {
       // let feedback = (await RecordingService.getFeedback(5)).data.recording.transcription
       // this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
       if (this.newAudio) {
+        console.log(this.newAudio);
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
         formData.append('audio', this.newAudio)
@@ -582,4 +590,6 @@ slider-bg: #72839d
 div >>> .v-slide-group__content {
   border-bottom: 1px solid #BDBDBD;
 }
+
+
 </style>
