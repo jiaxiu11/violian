@@ -68,6 +68,7 @@ export default {
     }
   },
   mounted() {
+    this.secondsPerRow = this.getSecondsPerRow();
     this.graph = this.getGraphForNotes(this.transcribedNotes);
     Plotly.newPlot(
       this.plotDivId,
@@ -150,10 +151,7 @@ export default {
       this.showTooltip = false;
     },
     getSecondsPerRow() {
-      let timeSignature = 4;
-      let bpm = 60;
-      let barsPerRow = 4;
-      return (60 / bpm) * timeSignature * barsPerRow;
+      return (60 / this.bpm) * this.timeSignature * this.barsPerRow;
     },
     getNumberFromMusicNote(noteNumber) {
       let octave = noteNumber[1] - "0";
@@ -359,7 +357,7 @@ export default {
       maxNoteNumber: "C6",
       timeSignature: 4,
       barsPerRow: 4,
-      secondsPerRow: this.getSecondsPerRow(),
+      secondsPerRow: 0,
       graph: null,
       noteColor: "DarkSlateGray",
       highlightedNoteColor: "#e0e5e5",

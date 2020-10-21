@@ -306,7 +306,9 @@ export default {
 
     this.selected = this.course.lessons.indexOf(this.lesson)
     this.src = this.lesson.exercises[0].videoUrl
-    this.currEx = this.lesson.exercises[0]
+    let ex = this.lesson.exercises[0]
+      ex.bpm = 80
+      this.currEx = ex
 
     window.addEventListener('scroll', () => {
       if (window.pageYOffset == 0) {
