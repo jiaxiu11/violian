@@ -1,6 +1,6 @@
 <template lang="pug">
     div
-        div(:id="plotDivId" :ref="plotContainerId")
+        div(:id="plotDivId" :ref="plotContainerId" style="position: relative;")
         div(v-if="selectedNote  && showTooltip" class="tooltip" :style="{top: tooltipTop + 'px', left:tooltipLeft + 'px'}")
             v-alert(dense border="left" color="cyan" colored-border elevation="2")
                 div note: {{selectedNote.note}}, onset: {{selectedNote.onset}}, duration: {{selectedNote.duration}}
@@ -84,13 +84,12 @@ export default {
       if (this.shouldIndicateNoteClicked) {
         this.indicateNoteAsClicked(this.transcribedNotes[idx]);
       }
-      this.onSelectNote(this.rowNum, idx);
 
       //fire event for green tick
       // FYI: to get x-position from x-coord, use the method below
-      // let xaxis = data.points[0].xaxis;
-      // let left = xaxis.l2p(this.transcribedNotes[idx].onset) + xaxis._offset;
-      this.$emit("myEvent", [this.transcribedNotes[idx].onset, this.rowNum]);
+      let xaxis = data.points[0].xaxis;
+      let left = xaxis.l2p(this.transcribedNotes[idx].onset) + xaxis._offset;
+      this.onSelectNote(this.rowNum, left);
     },
     indicateNoteAsClicked(note) {
       let noteBackgroundShape = {
@@ -262,8 +261,6 @@ export default {
       );
     },
     getGraphForNotes(notes) {
-      console.log("redraw");
-      console.log(notes);
       let row = notes;
       let graph = {
         data: [

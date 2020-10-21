@@ -45,7 +45,9 @@
                               :transcribedNotes="transcribedNotes[idx]"
                               :rowNum="idx + 1"
                               :bpm="currEx.bpm"
-                              :onSelectNote="(rowNum,noteIdx)=>{}"
+                              :timeSignature="currEx.timeSignature"
+                              :barsPerRow="4"
+                              :onSelectNote="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
                               :isScrolling="false"
                               :shouldIndicateNoteClicked="false"
                               :clickedNoteRowNum="0"
@@ -53,9 +55,8 @@
 
                     v-row
                       v-col
-                        v-btn(@click="playTutorAudio") Play
-                        v-btn(@click="pauseTutorAudio") Pause
-                        v-btn(@click="transform = 0") reset
+                        v-btn(@click="play") Play
+                        v-btn(@click="pause") Pause
 
                       //- this is the rolling tick
                       img(
@@ -64,13 +65,30 @@
                           position:absolute; 
                           top:0;
                           left:0;
-                          opacity:0.7;
                           transform-origin: top left;
                           will-change: transform;
-                          z-index: 2147483647;
+                          z-index: 2;
+                          cursor: pointer;
                           `
-                        :style="{ transform: `translate3d(${transform}px, 147px, 0px)` }"
+                        :style="{ transform: `translate3d(${transformX}px, ${transformY}px, 0px)`, opacity: tutorFocused ? '0.8' : '0.4' }"
                         id="tick"
+                        @click="tutorFocused = true"
+                      )
+
+                      img(
+                        :src="require('../../assets/tick.png')" 
+                        style=`
+                          position:absolute; 
+                          top:0;
+                          left:0;
+                          transform-origin: top left;
+                          will-change: transform;
+                          z-index: 2;
+                          cursor: pointer;
+                          `
+                        :style="{ transform: `translate3d(${transformXStudent}px, ${transformYStudent}px, 0px)`, opacity: tutorFocused ? '0.4' : '0.8' }"
+                        id="student-tick"
+                        @click="tutorFocused = false"
                       )
 
         v-col.pa-0(cols="3" style="border-bottom: 1px solid #BDBDBD; border-left: 1px solid #BDBDBD; position: fixed; right:0;" :class="{ 'full-height': fullHeight, 'partial-height': !fullHeight }")
@@ -93,16 +111,17 @@
                 a.link.pl-4.py-5(style="font-size: 16px;" @click="goToLesson($event, currLesson)") {{ lessonIdx + 1 }}. {{ currLesson.name }}
 
     //- Tutor audio file
-    audio(ref="tutorAudio" @timeupdate="tutorAudioTimeUpdate" :src="videoSrc" type="audio/ogg")
+    audio(ref="tutorAudio" :src="videoSrc" type="audio/ogg" @ended="tutorAudioEnd")
 
     //- Student audio file
-    //- audio(ref="studentAudio" @timeupdate="tutorAudioTimeUpdate" :src="studentAudioSrc" type="audio/ogg")
+    audio(ref="studentAudio" :src="studentAudioSrc" type="audio/ogg" @ended="studentAudioEnd")
 </template>
 
 <script>
 /* eslint-disable */
 import EvaluationLineGraph from "../../views/EvaluationLineGraph";
 import vexUI from "@/plugins/vex";
+import vexUtils from "@/plugins/vexUtils"
 import { mapState } from "vuex";
 import utils from "@/utils";
 import videojs from "video.js";
@@ -131,17 +150,29 @@ export default {
       currEx: null,
       notesInBars: [],
       handlers: [],
+      demoStartTime: 0,
 
       // auto feedback
+      tutorFocused: true,
+      scoreYInterval: 137,
       newAudio: null,
-      transform: {},
+      transformX: 0,
+      transformY: 0,
+      transformXStudent: 30,
+      transformYStudent: 0,
+      canvasWidth: 0,
       activeRow: 0,
-      moving: false,
-      playing: false,
+      activeRowStudent: 1,
+      activeNote: 0,
       recordings: [],
       studentAudioSrc: '',
       scoreRows: [],
+      // split into rows of 4 bars
       notePositions: [],
+      noteOnsetDurations: [],
+
+      // animation
+      animationFrame: null,
 
       // thread info
       thread: null,
@@ -165,7 +196,6 @@ export default {
       to: 2,
 
       // page design
-      selected: null,
       fullHeight: false,
       opened: [0],
       videoSrc: '',
@@ -192,6 +222,10 @@ export default {
     },
   },
   computed: {
+    secondsPerRow () {
+      return (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature.split('/')[0]) * 4;
+    },
+
     ...mapState(["user", "students", "subscribedTutors"])
   },
   methods: {
@@ -225,36 +259,170 @@ export default {
     async getPastFeedback () {
       let recordings = (await RecordingService.list(this.currEx.id)).data.recordings
       this.recordings = recordings
+
+      if (recordings.length > 0) {
+        this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(recordings[0].transcription))
+        this.studentAudioSrc = recordings[0].audioUrl
+
+        await this.$nextTick()
+        var tick = document.getElementById('student-tick')
+        tick.parentNode.removeChild(tick)
+        var wrapper = document.getElementById('lineGraph0')
+        wrapper.appendChild(tick)
+        this.scoreYInterval = 137 + 150
+      }
+    },
+
+    play () {
+      if (this.tutorFocused) {
+        this.playTutorAudio()
+      } else {
+        this.playStudentAudio()
+      }
+    },
+
+    pause () {
+      if (this.tutorFocused) {
+        this.pauseTutorAudio()
+      } else {
+        this.pauseStudentAudio()
+      }
     },
 
     playTutorAudio () {
       // play the audio
+      this.tutorFocused = true
+      for (let i = 0; i < this.handlers.length; i++) {
+        this.handlers[i].canvas.removeEventListener('mousemove', this.canvasMouseMove, false)
+      }
+
       this.$refs['tutorAudio'].play()
-      this.transform = this.startEndPosOfRows[this.activeRow][1] - this.startEndPosOfRows[this.activeRow][0]
-      this.moving = true
-      this.playing = true
+
+      let animate = () => {
+        let currTime = this.$refs['tutorAudio'].currentTime - this.demoStartTime
+        if (currTime > this.demoStartTime) {
+          currTime = currTime - this.demoStartTime
+          let currNoteOnsetDuration = this.noteOnsetDurations[this.activeRow][this.activeNote]
+          if (currTime < currNoteOnsetDuration.onset + currNoteOnsetDuration.duration) {
+            // move within this note
+            let timeFraction = (currTime - currNoteOnsetDuration.onset) / currNoteOnsetDuration.duration;
+            if (this.activeNote == this.scoreRows[this.activeRow].length - 1) {
+              this.transformX = (this.notePositions[this.activeRow][this.activeNote].x + parseFloat((this.canvasWidth - 20 - this.notePositions[this.activeRow][this.activeNote].x) * timeFraction))
+            } else {
+              this.transformX = (this.notePositions[this.activeRow][this.activeNote].x + parseFloat((this.notePositions[this.activeRow][this.activeNote + 1].x - this.notePositions[this.activeRow][this.activeNote].x) * timeFraction))
+            }
+          } else {
+            // move to next note, if needed move to next row
+            // console.log(this.activeRow, this.activeNote)
+            if (this.activeNote == this.scoreRows[this.activeRow].length - 1) {
+              this.activeNote = 0
+              this.activeRow += 1
+              this.transformY = this.transformY + this.scoreYInterval + 10
+            } else {
+              this.activeNote += 1
+            }
+          }
+        }
+
+        this.animationFrame = requestAnimationFrame(animate);
+      }
+
+      this.animationFrame = requestAnimationFrame(animate);
     },
 
     pauseTutorAudio () {
       this.$refs['tutorAudio'].pause()
-      let tick = document.getElementById('tick')
-      let transform = window.getComputedStyle(tick).transform
-      let parts = transform.slice(7,-1).split(','); 
-      this.transform = parseFloat(parts[parts.length - 2])
-      this.moving = false
-      this.playing = false
+      cancelAnimationFrame(this.animationFrame)
+
+      for (let i = 0; i < this.handlers.length; i++) {
+        this.handlers[i].canvas.addEventListener('mousemove', this.canvasMouseMove, false)
+      }
     },
 
-    tutorAudioTimeUpdate (event) {
+    tutorAudioEnd () {
+      this.transformX = this.notePositions[0][0].x
+      this.transformY = 10
+      cancelAnimationFrame(this.animationFrame)
+      this.activeRow = 0
+      this.activeNote = 0
+    },
 
-      // this.left = this.startEndPosOfRows[this.activeRow][0]
-      // this.transform = 0
-      // var tick = document.getElementById('tick')
-      // tick.parentNode.removeChild(tick)
-      // var wrapper = document.getElementById(`vexflow-wrapper-${this.activeRow}`)
-      // wrapper.appendChild(tick);
-      // this.moving = false
-      
+    updateStudentPos (rowNum, left) {
+      this.tutorFocused = false
+      this.transformXStudent = left
+      this.transformYStudent = (rowNum - 1) * (this.scoreYInterval)
+      this.$refs['studentAudio'].currentTime = ((rowNum - 1) + (left - 30) / (this.canvasWidth - 50)) * this.secondsPerRow
+    },
+
+    playStudentAudio (rowNum, left) {
+      this.tutorFocused = false
+      this.$refs['studentAudio'].play()
+
+      let animate = () => {
+        let currTime = this.$refs['studentAudio'].currentTime
+        let endOfRowTime = this.activeRowStudent * this.secondsPerRow
+        if (currTime < endOfRowTime) {
+          // move within this row
+          let timeFraction = (currTime % this.secondsPerRow) / this.secondsPerRow
+          this.transformXStudent = (this.canvasWidth - 50) * timeFraction + 30
+        } else {
+          // move to next row
+          this.activeRowStudent += 1
+          if (this.activeRowStudent > this.notePositions.length) {
+            cancelAnimationFrame(this.animationFrame)
+            return
+          }
+          this.transformYStudent = this.transformY + this.scoreYInterval
+          this.transformXStudent = 30
+        }
+        
+        this.animationFrame = requestAnimationFrame(animate);
+      }
+
+      this.animationFrame = requestAnimationFrame(animate);
+    },
+
+    pauseStudentAudio () {
+      this.$refs['studentAudio'].pause()
+      cancelAnimationFrame(this.animationFrame)
+    },
+
+    studentAudioEnd () {
+      this.transformXStudent = 30
+      this.transformYStudent = 10
+      cancelAnimationFrame(this.animationFrame)
+      this.activeRowStudent = 1
+    },
+
+    canvasMouseMove (e) {
+      let mousePos = vexUtils.getMousePositionInCanvas(e.srcElement, e)
+      let rowNum = parseInt(e.srcElement.id.split('-')[2])
+      this.handlers[rowNum].deHighlightAll()
+      for (let i = 0; i < this.notePositions[rowNum].length; i++) {
+        if (mousePos.x > this.notePositions[rowNum][i].x && mousePos.x < this.notePositions[rowNum][i].x + this.notePositions[rowNum][i].w) {
+          this.handlers[rowNum].highlightNote(i)
+        }
+      }
+    },
+
+    canvasMouseUp (e) {
+      this.tutorFocused = true
+      let mousePos = vexUtils.getMousePositionInCanvas(e.srcElement, e)
+      let rowNum = parseInt(e.srcElement.id.split('-')[2])
+      for (let i = 0; i < this.notePositions[rowNum].length; i++) {
+        if (mousePos.x > this.notePositions[rowNum][i].x && mousePos.x < this.notePositions[rowNum][i].x + this.notePositions[rowNum][i].w) {
+          this.transformX = this.notePositions[rowNum][i].x
+          this.transformY = rowNum * (this.scoreYInterval)
+          this.$refs['tutorAudio'].currentTime = this.noteOnsetDurations[rowNum][i].onset
+          this.activeRow = rowNum
+          this.activeNote = i
+        }
+      }
+    },
+
+    canvasMouseLeave (e) {
+      let rowNum = parseInt(e.srcElement.id.split('-')[2])
+      this.handlers[rowNum].deHighlightAll()
     },
 
     splitFeedbackIntoRows (feedback) {
@@ -297,7 +465,6 @@ export default {
       this.lesson.files = (await FileService.list(this.lesson.id)).data.files
     }
 
-    this.selected = this.course.lessons.indexOf(this.lesson)
     this.videoSrc = this.lesson.exercises[0].videoUrl
     this.currEx = this.lesson.exercises[0]
 
@@ -311,6 +478,7 @@ export default {
 
     if (this.currEx.useScore) {
       this.currEx.melody = this.currEx.melody.split('-')
+      this.demoStartTime = this.currEx.demoStartTime
       this.notesInBars = vexUI.notesToBars(this.currEx.melody, this.currEx.timeSignature)
     
       for (let i = 0; i < this.notesInBars.length; i += 4) {
@@ -320,25 +488,30 @@ export default {
       await this.$nextTick()
       
       var wrapper = document.getElementById(`vexflow-wrapper-${0}`)
-      var width = wrapper.offsetWidth;
+      var width = wrapper.offsetWidth
+      this.canvasWidth = width
       for (let i = 0; i < this.scoreRows.length; i++) {
         this.handlers.push(new vexUI.Handler(`vexflow-wrapper-${i}`, {
           numberOfStaves: 4,
           stavesPerRow: 4,
           canEdit: false,
           canvasProperties: {
-            width
+            width,
+            id: `vexflow-wrapper-${i}` + "-canvas",
           }
         }).init())
-
+        
         this.handlers[i].importNotes(this.scoreRows[i], this.currEx.timeSignature)
-        this.notePositions = this.handlers[i].getNotePositions().filter(x => x.length > 0)
+        this.handlers[i].canvas.addEventListener('mousemove', this.canvasMouseMove, false)
+        this.handlers[i].canvas.addEventListener('mouseup', this.canvasMouseUp, false)
+        this.handlers[i].canvas.addEventListener('mouseleave', this.canvasMouseLeave, false)
+        this.handlers[i].canvas.style.cursor = 'pointer'
+        this.notePositions.push(this.handlers[i].getNotePositions().filter(x => x.length > 0).flat())
+        this.noteOnsetDurations.push(vexUI.notesToOnsetDuration(this.scoreRows[i], this.currEx.timeSignature, this.currEx.bpm, i))
       }
     
-      // append the tick to the score
-      this.left = this.startEndPosOfRows[0][0]
-      // time per 4 bars
-      this.transitionTime = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature.split('/')[0]) * this.handlers[this.activeRow].getNotePositions().filter(x => x.length > 0).length
+      // set up and append the tick to the score
+      this.transformX = parseFloat(this.notePositions[0][0].x)
       var tick = document.getElementById('tick')
       tick.parentNode.removeChild(tick)
       wrapper.appendChild(tick)

@@ -11,7 +11,7 @@ const VF = Vex.Flow;
  * Vex.UI.Handler: this class is responsible for starting all the events needed for the VexFlow User Interface to work.
  */
 Vex.UI.provisoryTickableStyle = {shadowBlur:0, shadowColor:'gray', fillStyle:'gray', strokeStyle:'gray'}; 
-Vex.UI.highlightNoteStyle = {shadowBlur:15, shadowColor:'red', fillStyle:'black', strokeStyle:'black'};
+Vex.UI.highlightNoteStyle = {backgroundColor:'rgba(169,169,169,1)', fillStyle:'rgba(169,169,169,1)', strokeStyle:'rgba(169,169,169,1)'};
 Vex.UI.defaultNoteStyle = {shadowBlur:0, shadowColor:'black', fillStyle:'black', strokeStyle:'black'};
 Vex.UI.scale = 1.0;
 
@@ -71,7 +71,7 @@ Vex.UI.Handler.prototype.numBars = 4;
 Vex.UI.Handler.prototype.timeSignature = '4/4';
 
 Vex.UI.Handler.prototype.createCanvas = function() {
-	var canvas = document.createElement('canvas');
+  var canvas = document.createElement('canvas');
 	//Attach all properties to element
 	var props = Object.keys(this.options.canvasProperties);
 	for(var i = 0; i<props.length; i++){
@@ -581,15 +581,40 @@ Vex.UI.Handler.prototype.highlightNote = function(idx) {
 	} else {
 		var currStave = 0;
 		var currNumNotes = this.staveList[currStave].getTickables().length;
-		while (idx > currNumNotes) {
+		while (idx >= currNumNotes) {
 			idx -= currNumNotes;
 			currStave ++;
 			currNumNotes = this.staveList[currStave].getTickables().length;
-		}
-		if (currNumNotes > idx)
-			this.staveList[currStave].getTickables()[idx].setHighlight(true);
-			this.redraw();
+    }
+
+    this.staveList[currStave].getTickables()[idx].setHighlight(true);
+    this.redraw();
 	}
+};
+
+Vex.UI.Handler.prototype.deHighlightNote = function(idx) {
+	if (idx == 0) {
+		this.staveList[0].getTickables()[0].setHighlight(false);
+		this.redraw();
+	} else {
+		var currStave = 0;
+		var currNumNotes = this.staveList[currStave].getTickables().length;
+		while (idx >= currNumNotes) {
+			idx -= currNumNotes;
+			currStave ++;
+			currNumNotes = this.staveList[currStave].getTickables().length;
+    }
+
+    this.staveList[currStave].getTickables()[idx].setHighlight(false);
+    this.redraw();
+	}
+};
+
+Vex.UI.Handler.prototype.deHighlightAll = function() {
+	for (let i = 0; i < this.staveList.length; i++) {
+		this.staveList[i].getTickables().forEach(tickable => tickable.setHighlight(false))
+	}
+    this.redraw();
 };
 
 Vex.UI.Handler.prototype.changeNumberOfBars = function (newNumberOfBars, notes) {
@@ -1036,8 +1061,6 @@ Vex.UI.MouseListener.prototype.handleMouseClick = function(evt){
     default:
         alert('You have a strange Mouse!');
 	}
-	
-	
 };
 
 Vex.UI.MouseListener.prototype.handleMouseWheel = function(evt){
@@ -2320,10 +2343,10 @@ Vex.UI.notesToBars = function (notes, timeSignature) {
 }
 
 // convert a flat array of notes into arrays of arrays of notes, each inner array represents one measure in music score
-Vex.UI.notesToOnsetAndDuration = function (notes, timeSignature, bpm) {
+Vex.UI.notesToOnsetDuration = function (notes, timeSignature, bpm, rowNum) {
 	if (notes && timeSignature && bpm) {
 		var result = []
-    var time = 0;
+    var time = parseInt(timeSignature.split('/')[0]) * 4 * 60 / bpm * rowNum;
     var beatValue = parseInt(timeSignature.split('/')[1])
 		notes.forEach(element => {
 			var temp = element.split("/")[2];
@@ -2341,7 +2364,7 @@ Vex.UI.notesToOnsetAndDuration = function (notes, timeSignature, bpm) {
 			}
       
       // find out duration of note
-      duration = beatValue / parseInt(temp) * 60 / bpm
+      let duration = beatValue / parseInt(temp) * 60 / bpm
       if (isDot) duration = duration * 1.5
       
       result.push({
