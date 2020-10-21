@@ -1,18 +1,21 @@
 <template>
   <div id="inner">
     <section class="main-controls">
-      <button id="recButton" class="notRec" @click="onClick" style="margin-top: 2px;"></button>
-      <div style="margin-left: 10px; margin-top: 15px; "> {{ formattedElapsedTime }} </div>
+      <button id="recButton" class="notRec" @click="onClick" style="margin-top: 10px;"></button>
+      <div style="margin-left: 15px; margin-top: 10px; "> {{ formattedElapsedTime }} </div>
 
     </section>
 
     <section class="sound-clips">
     </section>
+
+    <button class="submit" v-show="showSubmit" @click="submitAudio" style="margin-top: 2px;">Upload Recording</button>
   </div>
 </template>
 
 <script>
 /* eslint-disable */
+import RecordingService from "@/services/RecordingService"
 export default {
   name: 'AudioRecorder',
   props: ['currEx'],
@@ -27,6 +30,8 @@ export default {
       isRecording: false,
       selectedAudioFile: null,
       soundClips: null,
+      recordingCounter: 0,
+      showSubmit: false,
 
       // timer
       elapsedTime: 0,
@@ -41,9 +46,11 @@ export default {
       const utc = date.toUTCString();
       return utc.substr(utc.indexOf(":") + 1, 5);
     }
+    
   },
 
   methods: {
+    
 
     startTimer() {
       this.timer = setInterval(() => {
@@ -52,6 +59,7 @@ export default {
     },
 
     stopTimer() {
+      this.showSubmit = true;
       this.elapsedTime = 0;
       clearInterval(this.timer);
     },
@@ -65,32 +73,23 @@ export default {
         record.classList.add('notRec');
         record.classList.remove('Rec');
       }
-      console.log('classList', record.classList)
-
 
       this.isRecording ? this.onStop() : this.onStart()
       this.isRecording = !this.isRecording;
-      
     },
 
     onStart() {
+      
       this.startTimer()
       const record = document.getElementById('recButton');
       navigator.mediaDevices.getUserMedia(this.constraints).then(this.onSuccess, this.onError);
-      
-      record.style.background = "red";
-
-      // stop.disabled = false;
-      // record.disabled = true;
     },
+
     onStop() {
       this.stopTimer()
       this.mediaRecorder.stop();
-      console.log(this.mediaRecorder.state, ", Recorder Stopped");
+      console.log("Recorder state: ", this.mediaRecorder.state);
       const soundClips = document.querySelector('.sound-clips');
-      for (var x in soundClips.childNodes) {
-        console.log(x)
-      }
     },
 
     onSuccess(stream) {
@@ -102,8 +101,7 @@ export default {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorder.start();
       var chunks = [];
-      console.log(mediaRecorder.state);
-      console.log("recorder started");
+      console.log("Recorder state: ", mediaRecorder.state);
 
       mediaRecorder.onstop = function(e) {
         console.log("data available after MediaRecorder.stop() called.");
@@ -114,32 +112,40 @@ export default {
         const clipLabel = document.createElement('label');
         const audio = document.createElement('audio');
         const deleteButton = document.createElement('button');
-        const row = document.createElement('row');
         const radioInput = document.createElement('input');
         
-
         clipContainer.classList.add('clip');
+        clipContainer.style.margin = '0 auto'
         audio.setAttribute('controls', '');
-        deleteButton.textContent = 'Delete';
+        deleteButton.textContent = 'X';
         deleteButton.className = 'delete';
-        if(clipName === null) {
+        clipLabel.className = 'date';
+
+        // Style for elements
+        audio.style.padding = '20px 0 0 0';
+        audio.style.position = 'relative'
+        audio.style.top = '12px'
+        clipContainer.style.display = 'block';
+        clipLabel.style.color = 'blue';
+        clipLabel.style.padding = '10px'
+        deleteButton.style.margin = '10px'
+        deleteButton.style.color = 'red';
+        // deleteButton.style.border = '1';
+        deleteButton.style.fontWeight = 'bold';
+        deleteButton.style.fontSize = '30px';
+        deleteButton.style.position = 'relative'
+        deleteButton.style.top = '5px'
+
+        radioInput.style.height = '30px'
+        radioInput.style.width = '30px'
+        radioInput.style.position = 'relative'
+        radioInput.style.top = '12px'
+
+        if (clipName === null) {
           clipLabel.textContent = 'My unnamed clip';
         } else {
           clipLabel.textContent = clipName;
         }
-        
-        // clipLabel.innerHTML = "<style>label {margin-bottom:50px;background-color: blue;}</style>";
-        // var sheet2 = document.createElement('style')
-        // sheet2.innerHTML = "button {margin-bottom:50px;background-color: blue;}";
-        // // clipLabel.appendChild(sheet)
-        // deleteButton.appendChild(sheet2)
-        // clipLabel.innerHTML = "<style>{ margin-bottom:10px;}</style>";
-        // deleteButton.innerHTML = "<style>button { float:right; }</style>";
-
-
-        // row.appendChild(clipLabel);
-        // row.appendChild(deleteButton);
-        // clipContainer.appendChild(row);
 
         clipContainer.appendChild(radioInput);
         clipContainer.appendChild(clipLabel);
@@ -149,20 +155,30 @@ export default {
         soundClips.appendChild(clipContainer);
 
         audio.controls = true;
-        console.log(this.chunks)
-        const blob = new Blob(chunks, { 'type' : 'audio/wav; codecs=opus' });
+        var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
         chunks = [];
         const audioURL = window.URL.createObjectURL(blob);
         audio.src = audioURL;
-        console.log("recorder stopped", audioURL);
+        const fileName = clipLabel.textContent.concat(".ogg");
+        const file = new File([blob], fileName);
+        const fileURL = window.URL.createObjectURL(file);
+
+        // Download file during testing
+        // const url = window.URL.createObjectURL(file);
+        // var a = document.createElement("a");
+        // document.body.appendChild(a);
+        // a.style = "display: none";
+        // a.href = url;
+        // a.download = fileName;
+        // a.click();
+        // console.log("A", a)
+        // window.URL.revokeObjectURL(url);
+        // console.log("recorder stopped");
 
         radioInput.setAttribute('type', 'radio');
-        radioInput.setAttribute('name', audio);
-        radioInput.setAttribute('checked', true);
-        radioInput.onclick = function() {
-          this.selectedAudioFile = this.name;
-          console.log(this.selectedAudioFile);
-        }
+        radioInput.setAttribute('name', 'radio');
+        radioInput.setAttribute('value', file);
+
         clipLabel.classList.add('label')
 
         deleteButton.onclick = function(e) {
@@ -183,9 +199,8 @@ export default {
 
       mediaRecorder.ondataavailable = function(e) {
         chunks.push(e.data);
-        console.log(chunks);
-
       }
+
       this.mediaRecorder = mediaRecorder;
     },
 
@@ -194,16 +209,27 @@ export default {
     },
 
     async submitAudio (event) {
-      // let feedback = (await RecordingService.getFeedback(5)).data.recording.transcription
-      // this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
-      if (this.newAudio) {
+      var radios = document.getElementsByName('radio');
+
+      for (var i = 0; i < radios.length; i++) {
+        if (radios[i].checked) {
+          this.selectedAudioFile = radios[i].value
+          break;
+        }
+      }
+      console.log('selectedAudioFile: ', this.selectedAudioFile, this.currEx.id);
+
+      if (this.selectedAudioFile) {
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
-        formData.append('audio', this.newAudio)
+        formData.append('audio', this.selectedAudioFile);
+        // for (var key of formData.entries()) {
+        //   console.log(key[0] + ', ' + key[1]);
+        // }
         let recording = (await RecordingService.create(formData)).data.recording
         let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
-        this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
-        console.log(transcribedNotes)
+        const transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
+        console.log('transcribed notes: ', transcribedNotes)
       } else {
         alert('Please input an audio file to gain feedback')
       }
@@ -214,7 +240,9 @@ export default {
 </script>
 
 <style scoped>
-button {
+/* @import '/assets/styles/recorder.css'; */
+
+#recButton {
 	width: 35px;
 	height: 35px;
 	font-size: 0;
@@ -223,6 +251,34 @@ button {
 	border-radius: 35px;
 	margin: 18px;
 	outline: none;
+}
+
+button.submit {
+  padding:0.3em 1.2em;
+  margin:0 0.3em 0.3em 0;
+  border-radius:2em;
+  box-sizing: border-box;
+  font-weight:300;
+  color:#FFFFFF;
+  background-color:#ec5252;
+  text-align:center;
+}
+
+/* button.submit {
+ padding:0.3em 1.2em;
+ margin:0 0.3em 0.3em 0;
+ border-radius:2em;
+ box-sizing: border-box;
+ text-decoration:none;
+ font-family:'Roboto',sans-serif;
+ font-weight:300;
+ color:#FFFFFF;
+ background-color:#4eb5f1;
+ text-align:center;
+} */
+
+button.submit:hover{
+  background-color:#4b93bd;
 }
 
 .notRec{
@@ -248,87 +304,8 @@ button {
 	}
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body {
-  height: 100%;
-}
-
-body {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 0.8rem;
-}
-
-.wrapper {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-
 .main-controls {
-  padding: 0.5rem 0;
-}
-
-.label {
-  font-size: 20px;
-  background-color: #f00;
-  margin-bottom: 30px;
-}
-
-
-
-button:hover, button:focus {
-  box-shadow: inset 0px 0px 10px rgba(255, 255, 255, 1);
-  background: rgb(205, 23, 23);
-}
-
-
-/* Make the clips use as much space as possible, and
- * also show a scrollbar when there are too many clips to show
- * in the available space */
-.sound-clips {
-  flex: 1;
-  overflow: auto;
-}
-
-section, article {
-  display: block;
-}
-
-.clip {
-  padding-bottom: 1rem;
-}
-
-audio {
-  width: 100%;
-  display: block;
-  margin: 1rem auto 0.5rem;
-}
-
-.clip p {
-  display: inline-block;
-  font-size: 1rem;
-}
-
-.clip button {
-  font-size: 1rem;
-  float: right;
-}
-
-button.delete {
-  margin: 0 auto;
-  background: #f00;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8rem;
-}
-
-#inner {
-  /* width: 50%; */
+  width: 50%;
   margin: 0 auto;
 }
 

@@ -19,11 +19,10 @@
                 v-card(flat tile)
                   v-container
                     
-                    
                     h1 Do A Live Recording Here:
-                    audio-recorder(:currEx="this.lesson.exercises[0]")
+                    audio-recorder(:currEx="this.lesson.exercises[0]")  
                     
-                    v-row(style="margin-top: 50px;")
+                    v-row(style="margin-top: 20px;")
                       h1 Or Upload Your Audio File Here:
                     v-row
                       v-col(cols="6")
