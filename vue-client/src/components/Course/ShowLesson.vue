@@ -433,26 +433,37 @@ export default {
       let rowNum = parseInt(e.srcElement.id.split('-')[2])
       this.handlers[rowNum].deHighlightAll()
     },
+    splitFeedbackIntoRows(notes) {
+        let timePerRow = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
 
-    splitFeedbackIntoRows (feedback) {
-      let result = []
-      let temp = []
-      let perRowTime = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4
-      let currRow = 0
-      for (let i = 0; i < feedback.length; i++) {
-        if ((feedback[i].onset + feedback[i].duration) / perRowTime < currRow + 1){
-          temp.push(feedback[i])
-        } else {
-          result.push([...temp])
-          temp = []
-          temp.push(feedback[i])
-          currRow++
+        let newRowStartTime = 0;
+        let rows = [];
+        rows.push([]);
+        for (let i = 0; i < notes.length; i++) {
+            let note = notes[i];
+            if (note.onset < newRowStartTime + timePerRow) {
+                if (note.onset + note.duration <= newRowStartTime + timePerRow) {
+                    rows[rows.length - 1].push(note);
+                } else {
+                    // split a note that lasts across two rows into two notes
+                    let noteCopy = { ...note };
+                    noteCopy.onset = newRowStartTime + timePerRow;
+                    noteCopy.duration = note.onset + note.duration - (newRowStartTime + timePerRow);
+                    note.duration = note.duration - noteCopy.duration;
+                    rows[rows.length - 1].push(note);
+                    notes[i] = noteCopy;
+                    newRowStartTime = newRowStartTime + timePerRow;
+                    rows.push([]);
+                    i--;
+                }
+            } else {
+                newRowStartTime = newRowStartTime + timePerRow;
+                rows.push([]);
+                i--;
+            }
         }
+        return rows;
       }
-      if (temp.length > 0)
-        result.push(temp)
-      return result
-    }
   },
 
   created: async function () {
