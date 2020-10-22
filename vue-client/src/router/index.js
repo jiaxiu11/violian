@@ -40,8 +40,8 @@ const routes = [
     component: LogIn
   },
   {
-    path: '/auto-evaluation',
-    name: 'autoevaluation',
+    path: '/feedback/:course_id/lesson/:lesson_id',
+    name: 'feedback',
     component: AutoEvaluation
   },
   {
