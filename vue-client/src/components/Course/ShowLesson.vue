@@ -229,6 +229,7 @@ export default {
     ...mapState(["user", "students", "subscribedTutors"])
   },
   methods: {
+
     goToLesson (event, lesson) {
       this.$router.push({
         name: `showlesson`,
@@ -317,6 +318,8 @@ export default {
             if (this.activeNote == this.scoreRows[this.activeRow].length - 1) {
               this.activeNote = 0
               this.activeRow += 1
+              if (this.activeRow < this.notePositions.length)
+                document.getElementById(`vexflow-wrapper-${this.activeRow}`).scrollIntoView(true, {behavior: "smooth"})
               this.transformY = this.transformY + this.scoreYInterval + 10
             } else {
               this.activeNote += 1
@@ -372,6 +375,7 @@ export default {
             cancelAnimationFrame(this.animationFrame)
             return
           }
+          document.getElementById(`lineGraph${this.activeRowStudent - 1}`).scrollIntoView(true, {behavior: "smooth"})
           this.transformYStudent = this.transformY + this.scoreYInterval
           this.transformXStudent = 30
         }
