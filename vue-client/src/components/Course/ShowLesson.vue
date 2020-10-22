@@ -474,9 +474,7 @@ export default {
     }
 
     this.videoSrc = this.lesson.exercises[0].videoUrl
-    let ex = this.lesson.exercises[0]
-      ex.bpm = 80
-      this.currEx = ex
+    this.currEx = this.lesson.exercises[0]
 
     window.addEventListener('scroll', () => {
       if (window.pageYOffset == 0) {
