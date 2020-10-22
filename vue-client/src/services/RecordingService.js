@@ -14,6 +14,10 @@ export default {
     return Api().get(`recording/get-notes?rid=${recordingId}`)
   },
 
+  updateFeedback(recordingId, updatedTranscription) {
+    return Api().post(`recording/update-notes?rid=${recordingId}`, {transcription:updatedTranscription})
+  },
+
   delete (recordingId) {
     return Api().delete(`recording/del?rid=${recordingId}`)
   }

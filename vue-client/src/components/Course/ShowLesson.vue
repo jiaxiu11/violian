@@ -50,7 +50,8 @@
                               :bpm="currEx.bpm"
                               :timeSignature="currEx.timeSignature"
                               :barsPerRow="4"
-                              :onSelectNote="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
+                              :onClickNote="(rowNum, noteIdx)=>{}"
+                              :onSelectNoteForGreentick="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
                               :isScrolling="false"
                               :shouldIndicateNoteClicked="false"
                               :clickedNoteOnset=null

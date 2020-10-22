@@ -17,7 +17,8 @@ export default {
     "transcribedNotes",
     "rowNum",
     "bpm",
-    "onSelectNote",
+    "onClickNote",
+    "onSelectNoteForGreentick",
     "isScrolling",
     "clickedNoteOnset",
     "shouldIndicateNoteClicked"
@@ -102,13 +103,13 @@ export default {
       let idx = data.points[0].pointIndex;
       if (this.shouldIndicateNoteClicked) {
         this.clickedNote = this.transcribedNotes[idx];
+        this.onClickNote(this.rowNum, idx);
       }
-
       //fire event for green tick
       // FYI: to get x-position from x-coord, use the method below
       let xaxis = data.points[0].xaxis;
       let left = xaxis.l2p(this.transcribedNotes[idx].onset) + xaxis._offset;
-      this.onSelectNote(this.rowNum, left);
+      this.onSelectNoteForGreentick(this.rowNum, left);
     },
     onHover(data) {
       let idx = data.points[0].pointIndex;

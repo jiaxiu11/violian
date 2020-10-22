@@ -7,7 +7,16 @@
         v-card-text(class="commentCardScores" v-on:scroll.passive='onLineGraphScroll')
             div(v-for="(row, idx) in notesByRow" :key="idx")
                 div(:id="`vexflow-wrapper-${idx}`" style="position:relative")
-                EvaluationLineGraph( :bpm="bpm" :transcribedNotes="row" :rowNum="idx+1" :onSelectNote="onSelectNote" :isScrolling="isScrolling" :clickedNoteOnset="selectedRowNum !== null && selectedIndex !== null ? notesByRow[selectedRowNum-1][selectedIndex].onset : null" :shouldIndicateNoteClicked="true")
+                EvaluationLineGraph(
+                    :bpm="bpm"
+                    :transcribedNotes="row"
+                    :rowNum="idx+1"
+                    :onClickNote="onClickNote"
+                    :onSelectNoteForGreentick="(rowNum, left)=>{}"
+                    :isScrolling="isScrolling"
+                    :clickedNoteOnset="selectedRowNum !== null && selectedIndex !== null ? notesByRow[selectedRowNum-1][selectedIndex].onset : null"
+                    :shouldIndicateNoteClicked="true"
+                )
 </template>
 
 <script>
@@ -32,20 +41,26 @@ export default {
         this.isScrolling = false;
       }, 200);
     },
-    onSelectNote(rowNum, noteIndex) {
+    onClickNote(rowNum, noteIndex) {
       if (this.selectedIndex !== noteIndex || this.selectedRowNum !== rowNum) {
         this.selectedIndex = noteIndex;
         this.selectedRowNum = rowNum;
         this.comment = this.notesByRow[rowNum - 1][noteIndex].comment ?? null;
       }
     },
-    onCommentChange(data) {
+    async onCommentChange(data) {
       let rowIndex = this.selectedRowNum - 1;
       let row = [...this.notesByRow[rowIndex]];
       let note = { ...this.notesByRow[rowIndex][this.selectedIndex] };
       note.comment = data;
       row[this.selectedIndex] = note;
       this.$set(this.notesByRow, rowIndex, row);
+
+      let updatedTranscriptions = JSON.stringify(this.notesByRow.flat());
+      await RecordingService.updateFeedback(
+        this.recordingId,
+        updatedTranscriptions
+      );
     },
     splitTranscriptionIntoRows(notes) {
       let timePerRow =
@@ -86,6 +101,7 @@ export default {
       scoreRows: [],
       handlers: [],
       exercise: null,
+      recordingId: null,
       scrollTimeout: null,
       isScrolling: false,
       comment: null,
@@ -109,11 +125,12 @@ export default {
     // Get data for line graph
     let recordings = (await RecordingService.list(currEx.id)).data.recordings;
     if (recordings.length > 0) {
-      //TODO: change the recording index to 0
-      this.transcribedNotes = JSON.parse(recordings[5].transcription);
-      console.log(this.transcribedNotes);
+      let recordingIndex = 5;
+      this.recordingId = recordings[recordingIndex].id;
+      this.transcribedNotes = JSON.parse(
+        recordings[recordingIndex].transcription
+      );
       this.notesByRow = this.splitTranscriptionIntoRows(this.transcribedNotes);
-      console.log(this.notesByRow);
     }
 
     // Get music score
