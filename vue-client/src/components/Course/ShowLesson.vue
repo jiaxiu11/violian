@@ -10,17 +10,20 @@
             v-col.pa-0
               video-player(:exercise="this.lesson.exercises[0]" :videoSrc="videoSrc" v-if="isVideoContent")
           
-          v-container 
+
+          v-container
             v-tabs(v-model='tab' color="indigo")
               v-tabs-slider
               v-tab(href=`#feedback`) Auto Feedback
               v-tab-item(value="feedback")
                 v-card(flat tile)
                   v-container
-                    v-row
-                      v-col
-                        h1 Submit your practice audio to get feedback!
 
+                    h1 Do A Live Recording Here:
+                    audio-recorder(:currEx="this.lesson.exercises[0]")
+
+                    v-row(style="margin-top: 20px;")
+                      h1 Or Upload Your Audio File Here:
                     v-row
                       v-col(cols="6")
                         v-file-input(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense)
@@ -47,10 +50,11 @@
                               :bpm="currEx.bpm"
                               :timeSignature="currEx.timeSignature"
                               :barsPerRow="4"
-                              :onSelectNote="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
+                              :onClickNote="(rowNum, noteIdx)=>{}"
+                              :onSelectNoteForGreentick="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
                               :isScrolling="false"
                               :shouldIndicateNoteClicked="false"
-                              :clickedNoteRowNum="0"
+                              :clickedNoteOnset=null
                           )
 
                     v-row
@@ -76,9 +80,9 @@
                       )
 
                       img(
-                        :src="require('../../assets/tick.png')" 
+                        :src="require('../../assets/tick.png')"
                         style=`
-                          position:absolute; 
+                          position:absolute;
                           top:0;
                           left:0;
                           transform-origin: top left;
@@ -134,15 +138,19 @@ import VideoPlayer from "@/components/Course/VideoPlayer"
 import ThreadService from "@/services/ThreadService"
 import _ from 'lodash'
 import RecordingService from "@/services/RecordingService"
+import AudioRecorder from "@/components/Course/AudioRecorder"
+
 
 export default {
   name: 'ShowLesson',
   components: {
     'video-player': VideoPlayer,
+    'audio-recorder': AudioRecorder,
     'line-graph': EvaluationLineGraph
   },
   data () {
     return {
+
       course: null,
       lesson: null,
 
@@ -246,6 +254,7 @@ export default {
       // let feedback = (await RecordingService.getFeedback(5)).data.recording.transcription
       // this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
       if (this.newAudio) {
+        console.log(this.newAudio);
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
         formData.append('audio', this.newAudio)
@@ -379,7 +388,7 @@ export default {
           this.transformYStudent = this.transformY + this.scoreYInterval
           this.transformXStudent = 30
         }
-        
+
         this.animationFrame = requestAnimationFrame(animate);
       }
 
@@ -428,26 +437,37 @@ export default {
       let rowNum = parseInt(e.srcElement.id.split('-')[2])
       this.handlers[rowNum].deHighlightAll()
     },
+    splitFeedbackIntoRows(notes) {
+        let timePerRow = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
 
-    splitFeedbackIntoRows (feedback) {
-      let result = []
-      let temp = []
-      let perRowTime = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4
-      let currRow = 0
-      for (let i = 0; i < feedback.length; i++) {
-        if ((feedback[i].onset + feedback[i].duration) / perRowTime < currRow + 1){
-          temp.push(feedback[i])
-        } else {
-          result.push([...temp])
-          temp = []
-          temp.push(feedback[i])
-          currRow++
+        let newRowStartTime = 0;
+        let rows = [];
+        rows.push([]);
+        for (let i = 0; i < notes.length; i++) {
+            let note = notes[i];
+            if (note.onset < newRowStartTime + timePerRow) {
+                if (note.onset + note.duration <= newRowStartTime + timePerRow) {
+                    rows[rows.length - 1].push(note);
+                } else {
+                    // split a note that lasts across two rows into two notes
+                    let noteCopy = { ...note };
+                    noteCopy.onset = newRowStartTime + timePerRow;
+                    noteCopy.duration = note.onset + note.duration - (newRowStartTime + timePerRow);
+                    note.duration = note.duration - noteCopy.duration;
+                    rows[rows.length - 1].push(note);
+                    notes[i] = noteCopy;
+                    newRowStartTime = newRowStartTime + timePerRow;
+                    rows.push([]);
+                    i--;
+                }
+            } else {
+                newRowStartTime = newRowStartTime + timePerRow;
+                rows.push([]);
+                i--;
+            }
         }
+        return rows;
       }
-      if (temp.length > 0)
-        result.push(temp)
-      return result
-    }
   },
 
   created: async function () {
@@ -504,7 +524,7 @@ export default {
             id: `vexflow-wrapper-${i}` + "-canvas",
           }
         }).init())
-        
+
         this.handlers[i].importNotes(this.scoreRows[i], this.currEx.timeSignature)
         this.handlers[i].canvas.addEventListener('mousemove', this.canvasMouseMove, false)
         this.handlers[i].canvas.addEventListener('mouseup', this.canvasMouseUp, false)
@@ -586,4 +606,6 @@ slider-bg: #72839d
 div >>> .v-slide-group__content {
   border-bottom: 1px solid #BDBDBD;
 }
+
+
 </style>

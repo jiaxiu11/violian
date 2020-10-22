@@ -103,6 +103,7 @@ module.exports = (app) => {
     app.get("/recording/list", isAuthenticated, RecordingController.list),
     app.delete("/recording/del", isAuthenticated, RecordingController.destroy),
     app.get("/recording/get-notes", isAuthenticated, RecordingController.getTranscribedNotes),
+    app.post("/recording/update-notes", isAuthenticated, RecordingController.updateTranscribedNotes),
     
     // subscription management
     app.post(
