@@ -20,6 +20,8 @@ import CourseForm from "../views/course/CourseForm"
 import LessonForm from "../views/course/LessonForm"
 import MpegDash from "../components/MpegDash"
 import AutoEvaluation from "../views/AutoEvaluation";
+import ShowFeedback from "../views/course/ShowFeedback";
+import NewRecording from "../views/course/NewRecording";
 
 Vue.use(VueRouter);
 
@@ -40,9 +42,19 @@ const routes = [
     component: LogIn
   },
   {
-    path: '/feedback/:course_id/lesson/:lesson_id',
-    name: 'feedback',
+    path: '/feedback/new/:course_id/lesson/:lesson_id',
+    name: 'newfeedback',
     component: AutoEvaluation
+  },
+  {
+    path: '/feedback/show/:course_id/lesson/:lesson_id',
+    name: 'showfeedback',
+    component: ShowFeedback
+  },
+  {
+    path: '/recording/new/:course_id/lesson/:lesson_id',
+    name: 'newrecording',
+    component: NewRecording
   },
   {
     path: '/course/show/:course_id',
