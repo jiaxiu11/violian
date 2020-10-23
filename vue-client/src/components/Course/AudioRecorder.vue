@@ -1,27 +1,47 @@
 <template>
   <div>
+    <v-row justify="center">
+    <v-overlay
+      :value="overlay"
+    >
+      <label class="countdown">{{ countDown }} </label>
+    </v-overlay>
+  </v-row>
+  <v-container text-center>
     <section class="main-controls">
-      <canvas class="visualizer" height="60px"></canvas>
-      <button id="recButton" class="notRec" @click="onClick" style="margin-top: 10px;"></button>
-      <div style="margin-left: 15px; margin-top: 10px; "> {{ countDown }} </div>
-      <div style="margin-left: 15px; margin-top: 10px; margin-bottom: 20px;"> {{ formattedElapsedTime }} </div>
+      <v-row justify="center">
+        <canvas class="visualizer" justify="center" height="60px"></canvas>
+      </v-row>
+      <button id="recButton" class="notRec" @click="onClick"></button>
+      <label> {{ formattedElapsedTime }} </label>
     </section>
+  </v-container>
+  <v-divider v-show="showSubmit"></v-divider>
 
     <section class="sound-clips">
-      <article v-for='(recordingData, index) in recordingsData' :key='index'>
-        <input type="radio" :id='index' :value='index' v-model="selectedFileIndex">
-        <label class="audio" @click="changeFileName(index)">{{ recordingData[0] }}</label>
-        <audio controls :src='recordingData[1]'>
-          
-        </audio>
-        <button class="delete" @click="onDelete(recordingData)">Delete</button>
-        
+      <article class="sound-clip" v-for='(recordingData, index) in recordingsData' :key='index'>
+        <v-row>
+          <v-col cols="1">
+            <input type="radio" :id='index' :value='index' v-model="selectedFileIndex">
+          </v-col>
+          <v-col cols="3">  
+            <div class="audioName">
+            <v-chip class="ma-2" column=true color="primary" nlabel @click="changeFileName(index)">
+            {{ recordingData[0] }}
+            </v-chip>
+            </div>
+          </v-col>
+          <audio controls :src='recordingData[1]'></audio>
+          <v-btn class="delete" @click="onDelete(recordingData)" color="error">
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+        </v-row>
       </article>
     </section>
-
-    <button v-show="showSubmit" @click="submitAudio">Upload</button>
-
-    <!-- <button class="submit" v-show="showSubmit" @click="submitAudio" style="margin-top: 2px;">Upload Recording</button> -->
+    <v-divider v-show="showSubmit"></v-divider>
+    <v-row justify="center">
+      <v-btn class="submit" v-show="showSubmit" @click="submitAudio">Upload</v-btn>
+    </v-row>
   </div>
 </template>
 
@@ -34,6 +54,9 @@ export default {
 
   data () {
     return {
+      // show: false,
+      overlay: false,
+      zIndex: 0,
       // exercise info
       showRecorder: true,
       constraints: { audio: true },
@@ -95,6 +118,7 @@ export default {
           if (!this.isRecording) {
             this.onStart()
             this.isRecording = !this.isRecording;
+            this.overlay = false;
           }
         }
     },
@@ -115,6 +139,7 @@ export default {
       if (!this.isRecording && !this.hasCountDownStarted) {
         this.countDownTimer();
         this.hasCountDownStarted = true;
+        this.overlay = !this.overlay
       } 
       
       if (this.isRecording) {
@@ -146,9 +171,6 @@ export default {
       this.mediaRecorder.start()
       this.startTimer()
       const record = document.getElementById('recButton');
-      
-      
-    
     },
 
     onStop() {
@@ -165,8 +187,6 @@ export default {
     },
 
     onSuccess(stream) {
-      const record = document.querySelector('.record');
-      const stop = document.querySelector('.stop');
       const soundClips = document.querySelector('.sound-clips');
       const mainSection = document.querySelector('.main-controls');
       console.log(soundClips, mainSection)
@@ -191,8 +211,6 @@ export default {
       mediaRecorder.ondataavailable = (e) => {
         chunks.push(e.data);
       }
-
-      
     },
 
     onError(err){
@@ -201,10 +219,14 @@ export default {
     changeFileName(index) {
       const existingName = this.recordingsData[index][0];
       const newClipName = prompt('Enter a new name for your sound clip?');
+      var newData = this.recordingsData[index];
+      newData[0] = newClipName
+      console.log(newData)
+
       if(newClipName === null) {
-        this.recordingsData[index][0]= existingName;
+        this.recordingsData[index]= newData;
       } else {
-        this.recordingsData[index][0] = newClipName;
+        this.recordingsData[index] = newData;
       }
     },
 
@@ -224,8 +246,6 @@ export default {
       const dataArray = new Uint8Array(bufferLength);
 
       source.connect(analyser);
-      //analyser.connect(audioCtx.destination);
-
       draw()
 
       function draw() {
@@ -264,7 +284,6 @@ export default {
 
         canvasCtx.lineTo(canvas.width, canvas.height/2);
         canvasCtx.stroke();
-
       }
     }
 
@@ -283,22 +302,6 @@ export default {
 	border-radius: 35px;
 	margin: 18px;
 	outline: none;
-}
-
-button.submit {
-  padding:0.3em 1.2em;
-  margin:0 0.3em 0.3em 0;
-  border-radius:2em;
-  box-sizing: border-box;
-  font-family:'Roboto',sans-serif;
-  font-weight:300;
-  color:#FFFFFF;
-  background-color:#ec5252;
-  text-align:center;
-}
-
-button.submit:hover{
-  background-color:#4b93bd;
 }
 
 .notRec{
@@ -324,38 +327,24 @@ button.submit:hover{
 	}
 }
 
-.main-controls {
-  width: 50%;
-  margin: 0 auto;
+label.countdown {
+  font-size: 100px;
 }
 
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+input[type=radio] {
+   width: 30px;
+   height: 30px;
 }
+.visualizer {
+  position: relative;
+  left: -30px;
+} 
 
-html, body {
-  height: 100%;
-}
-
-body {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 0.8rem;
-}
-
-.wrapper {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-h1, h2 {
-  font-size: 2rem;
-  text-align: center;
-  font-weight: normal;
-  padding: 0.5rem 0 0 0;
+.audioName {
+  /* margin-bottom: 5rem;
+  margin-right: 2rem; */
+  position: relative;
+  top: -10px;
 }
 
 canvas {
@@ -364,100 +353,25 @@ canvas {
 }
 
 
-button {
-  font-size: 1rem;
-  background: #0088cc;
-  text-align: center;
-  color: white;
-  border: none;
-  transition: all 0.2s;
-  padding: 0.5rem;
-}
-
-button:hover, button:focus {
-  box-shadow: inset 0px 0px 10px rgba(255, 255, 255, 1);
-  background: #0ae;
+button.submit {
+  margin-top: 3rem;
 }
 
 button.delete {
-  float: right;
-  background: rgb(238, 28, 0);
-  position: relative;
-  top: -120px;
+  margin-top: 0.5rem;
+  margin-left: 2rem;
 }
 
-
-/* Make the clips use as much space as possible, and
- * also show a scrollbar when there are too many clips to show
- * in the available space */
 .sound-clips {
-  flex: 1;
-  width: 70%;
-  
-  /* margin: 0 auto; */
-  
+  margin: 1rem;
 }
 
-section, article {
-  display: block;
+.sound-clip {
+  margin: 1rem;
 }
 
 .clip {
   padding-bottom: 1rem;
-}
-
-audio {
-  /* width: 50%; */
-  display: block;
-  margin: 1rem auto 0.5rem;
-  position: relative;
-  bottom: 65px;
-  left: -30px;
-  padding: 0.5rem 0.3rem;
-}
-
-
-/* Checkbox hack to control information box display */
-
-label {
-  position: relative;
-  top: -10px;
-  right: -10px;
-  cursor: pointer;
-  background-color: rgb(117, 214, 117);
-  border-radius: 5px;
-  padding: 0.5rem 0.3rem;
-}
-
-/* input[type=checkbox] {
-   position: absolute;
-   top: -100px;
-} */
-input[type=radio] {
-   width: 30px;
-   height: 30px;
-}
-.visualizer {
-  position: relative;
-  left: -50px;
-}
-
-/* Cursor when clip name is clicked over */
-
-.clip p {
-  cursor: pointer;
-}
-
-
-/* Adjustments for wider screens */
-@media all and (min-width: 800px) {
-  /* Don't take all the space as readability is lost when line length
-     goes past a certain size */
-  .wrapper {
-    width: 90%;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
 }
 
 
