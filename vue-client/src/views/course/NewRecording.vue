@@ -1,17 +1,16 @@
 <template lang="pug">
   div(v-if="course && lesson")
     v-container.pa-0(fluid)
-      h1 Do A Live Recording Here:
+      v-row(justify="center")
+        h1 Do A Live Recording Here:
       audio-recorder(v-if="currEx" :currEx="currEx")
-
-      v-row(style="margin-top: 20px;")
+      <v-divider></v-divider>
+      v-row(style="margin-top: 20px;" justify="center")
         h1 Or Upload Your Audio File Here:
-      v-row
+      v-row(justify="center")
         v-col(cols="6")
           v-file-input(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense)
-        v-col(cols="6")
           v-btn(color="#ec5252" dark @click="submitAudio()" style="margin-top: 2px;") Submit
-
       v-row
         v-col
           score-feedback(v-if="currEx" :currEx="currEx" :isScore="true")
