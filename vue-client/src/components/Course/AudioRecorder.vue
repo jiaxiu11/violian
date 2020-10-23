@@ -17,20 +17,21 @@
     </section>
   </v-container>
   <v-divider v-show="showSubmit"></v-divider>
-
-    <section class="sound-clips">
+    
+    <section class="sound-clips"  >
       <article class="sound-clip" v-for='(recordingData, index) in recordingsData' :key='index'>
-        <v-row>
+        <v-row justify="center">
           <v-col cols="1">
             <input type="radio" :id='index' :value='index' v-model="selectedFileIndex">
           </v-col>
-          <v-col cols="3">  
+          <v-col cols="2">  
             <div class="audioName">
             <v-chip class="ma-2" column=true color="primary" nlabel @click="changeFileName(index)">
             {{ recordingData[0] }}
             </v-chip>
             </div>
           </v-col>
+          
           <audio controls :src='recordingData[1]'></audio>
           <v-btn class="delete" @click="onDelete(recordingData)" color="error">
             <v-icon>mdi-delete</v-icon>
@@ -40,8 +41,32 @@
     </section>
     <v-divider v-show="showSubmit"></v-divider>
     <v-row justify="center">
-      <v-btn class="submit" v-show="showSubmit" @click="submitAudio">Upload</v-btn>
+      <v-btn class="submit" v-show="showSubmit" @click="submitAudio"
+      :disabled="dialog" :loading="dialog">Upload</v-btn>
+      <v-alert class="submitError"
+        type="error"
+        v-show="submissionError"
+      >An error has occurred</v-alert>
     </v-row>
+    <div class="text-center">
+      <v-dialog
+        v-model="dialog"
+        hide-overlay
+        persistent
+        width="300"
+      >
+        <v-card color="primary" dark>
+          <v-card-text>
+            Uploading recording...
+            <v-progress-linear
+              indeterminate
+              color="white"
+              class="mb-0"
+            ></v-progress-linear>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+    </div>
   </div>
 </template>
 
@@ -74,9 +99,19 @@ export default {
       //countdown
       countDown: 1,
       defaultCountDown: 1,
-      hasCountDownStarted: false
+      hasCountDownStarted: false,
+
+      submissionError: false,
+      dialog: false
 
     }
+  },
+  watch: {
+    // dialog (val) {
+    //   if (!val) return
+
+    //   setTimeout(() => (this.dialog = false), 1000)
+    // },
   },
   computed: {
     showSubmit() {
@@ -149,9 +184,10 @@ export default {
     },
 
     async submitAudio() {
+      this.dialog = true
       const file = this.recordingsData[this.selectedFileIndex][2];
       console.log(file)
-      if (file) {
+      try {
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
         console.log(this.currEx.id, file)
@@ -159,10 +195,11 @@ export default {
         let recording = (await RecordingService.create(formData)).data.recording
         let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
         const transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
-        console.log('transcribed notes: ', transcribedNotes)
-        alert("Audio file successfully uploaded")
-      } else {
-        alert('Please input an audio file to gain feedback')
+      } catch (error) {
+        console.log(error)
+        this.submissionError = true;
+      } finally {
+        this.dialog = false
       }
     },
 
@@ -339,6 +376,10 @@ input[type=radio] {
   position: relative;
   left: -30px;
 } 
+.audio {
+  position: relative;
+  left: -30px;
+}
 
 .audioName {
   /* margin-bottom: 5rem;
@@ -352,9 +393,12 @@ canvas {
   margin-bottom: 0.5rem;
 }
 
+.submitError {
+  margin: 1.5rem;
+}
 
 button.submit {
-  margin-top: 3rem;
+  margin: 2rem;
 }
 
 button.delete {
