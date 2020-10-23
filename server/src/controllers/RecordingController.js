@@ -184,4 +184,42 @@ module.exports = {
       });
     }
   },
+
+  async updateTranscribedNotes(req, res) {
+    try {
+      await sequelize.transaction(async (t) => {
+        const { rid } = req.query;
+        const {transcription} = req.body
+        const recording = await Recording.findOne({
+          where: {
+            id: rid,
+          },
+        });
+
+        if (!recording) {
+          return res.status(403).send({
+            error: "Recording information is incorrect",
+          });
+        }
+          recording.transcription = transcription;
+
+          await Recording.update(recording.dataValues, {
+            where: {
+              id: rid,
+            },
+            transaction: t,
+          });
+
+        await recording.reload().dataValues;
+        res.send({
+          recording: recording.toJSON(),
+        });
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(500).send({
+        error: "An error has occured in trying to get transcribed notes",
+      });
+    }
+  }
 };

@@ -38,7 +38,7 @@
                h3.text--white(style="bottom: 12px; text-align: center; position: absolute; left:0; right:0; text-shadow: 1px 1px 2px #000000;") Preview this course
             v-row
               v-col.text-left
-                h1.pl-5.font-weight-bold(style="font-size: 36px;") S${{ course.price.toFixed(2) }}
+                h1.pl-5.font-weight-bold(style="font-size: 36px;") S${{ course.price ? course.price.toFixed(2): '0' }}
             v-row
               v-col.text-center
                 v-btn(color="#ec5252" dark @click="subscribe" style="width:90%" x-large v-if="course.price == 0") Enroll Now
