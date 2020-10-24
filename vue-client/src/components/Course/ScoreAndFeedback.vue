@@ -122,7 +122,7 @@ export default {
 
   watch: {
     recording: function (val) {
-      this.transcribedNotes = splitFeedbackIntoRows(JSON.parse(val.transcription));
+      this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(val.transcription));
     },
   },
 
