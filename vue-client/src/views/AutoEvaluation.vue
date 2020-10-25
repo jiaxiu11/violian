@@ -1,8 +1,8 @@
 <template lang="pug">
     v-card.mx-10.mt-10(height="600px" class="commentCard")
-        v-card-title Click on a note to leave comment
+        v-card-title Click on a note in student's recording to leave comment
         v-card-subtitle(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
-        v-text-field.mx-10(label="comment" hint="comment on a note" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
+        v-text-field.mx-10(label="comment" hint="Press enter to save" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
         v-divider
         v-card-text(class="commentCardScores" v-on:scroll.passive='onLineGraphScroll')
           score-feedback(

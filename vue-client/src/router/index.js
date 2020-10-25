@@ -22,6 +22,7 @@ import MpegDash from "../components/MpegDash"
 import AutoEvaluation from "../views/AutoEvaluation";
 import ShowFeedback from "../views/course/ShowFeedback";
 import NewRecording from "../views/course/NewRecording";
+import Notification from "../views/Notification"
 
 Vue.use(VueRouter);
 
@@ -114,6 +115,10 @@ const routes = [
     path: '/video',
     name: 'video',
     component: Video
+  },
+  {
+    path: '/notifications',
+    component: Notification
   },
   {
     path: '/courses/threads/index',

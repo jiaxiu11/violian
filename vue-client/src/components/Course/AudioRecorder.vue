@@ -1,17 +1,72 @@
 <template>
-  <div id="inner">
-    <a id="currEx" style="display:none">{{ currEx.id }}</a>
+  <div>
+    <v-row justify="center">
+    <v-overlay
+      :value="overlay"
+    >
+      <label class="countdown">{{ countDown }} </label>
+    </v-overlay>
+  </v-row>
+  <v-container text-center>
     <section class="main-controls">
-      <button id="recButton" class="notRec" @click="onClick" style="margin-top: 10px;"></button>
-      <div style="margin-left: 15px; margin-top: 10px; "> {{ countDown }} </div>
-      <div style="margin-left: 15px; margin-top: 10px; "> {{ formattedElapsedTime }} </div>
-
+      <v-row justify="center">
+        <canvas class="visualizer" justify="center" height="60px"></canvas>
+      </v-row>
+      <button id="recButton" class="notRec" @click="onClick"></button>
+      <label> {{ formattedElapsedTime }} </label>
     </section>
-
-    <section class="sound-clips">
+  </v-container>
+  <v-divider v-show="showSubmit"></v-divider>
+    
+    <section class="sound-clips"  >
+      <article class="sound-clip" v-for='(recordingData, index) in recordingsData' :key='index'>
+        <v-row justify="center">
+          <v-col cols="1">
+            <input type="radio" :id='index' :value='index' v-model="selectedFileIndex">
+          </v-col>
+          <v-col cols="2">  
+            <div class="audioName">
+            <v-chip class="ma-2" column=true color="primary" nlabel @click="changeFileName(index)">
+            {{ recordingData[0] }}
+            </v-chip>
+            </div>
+          </v-col>
+          
+          <audio controls :src='recordingData[1]'></audio>
+          <v-btn class="delete" @click="onDelete(recordingData)" color="error">
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+        </v-row>
+      </article>
     </section>
-
-    <!-- <button class="submit" v-show="showSubmit" @click="submitAudio" style="margin-top: 2px;">Upload Recording</button> -->
+    <v-divider v-show="showSubmit"></v-divider>
+    <v-row justify="center">
+      <v-btn class="submit" v-show="showSubmit" @click="submitAudio"
+      :disabled="dialog" :loading="dialog">Upload</v-btn>
+      <v-alert class="submitError"
+        type="error"
+        v-show="submissionError"
+      >An error has occurred</v-alert>
+    </v-row>
+    <div class="text-center">
+      <v-dialog
+        v-model="dialog"
+        hide-overlay
+        persistent
+        width="300"
+      >
+        <v-card color="primary" dark>
+          <v-card-text>
+            Uploading recording...
+            <v-progress-linear
+              indeterminate
+              color="white"
+              class="mb-0"
+            ></v-progress-linear>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+    </div>
   </div>
 </template>
 
@@ -24,29 +79,45 @@ export default {
 
   data () {
     return {
+      // show: false,
+      overlay: false,
+      zIndex: 0,
       // exercise info
       showRecorder: true,
       constraints: { audio: true },
       chunks: [],
       mediaRecorder: null,
       isRecording: false,
-      selectedAudioFile: null,
-      soundClips: null,
-      recordings: {},
-      recordingId: 0,
-      showSubmit: false,
+      recordingsData: [],
+      selectedFileIndex: null,
+      audioCtx: null,
 
       // timer
       elapsedTime: 0,
       timer: null,
 
       //countdown
-      countDown: 4,
-      defaultCountDown: 4
+      countDown: 1,
+      defaultCountDown: 1,
+      hasCountDownStarted: false,
+
+      submissionError: false,
+      dialog: false
 
     }
   },
+  watch: {
+    // dialog (val) {
+    //   if (!val) return
+
+    //   setTimeout(() => (this.dialog = false), 1000)
+    // },
+  },
   computed: {
+    showSubmit() {
+      return this.recordingsData.length != 0;
+    },
+
     formattedElapsedTime() {
       const date = new Date(null);
       date.setSeconds(this.elapsedTime / 1000);
@@ -54,6 +125,11 @@ export default {
       return utc.substr(utc.indexOf(":") + 1, 5);
     }
     
+  },
+
+  created() {
+    console.log('started'),
+    navigator.mediaDevices.getUserMedia(this.constraints).then(this.onSuccess, this.onError);
   },
 
   methods: {
@@ -74,9 +150,11 @@ export default {
             record.classList.add('notRec');
             record.classList.remove('Rec');
           }
-
-          this.isRecording ? this.onStop() : this.onStart()
-          this.isRecording = !this.isRecording;
+          if (!this.isRecording) {
+            this.onStart()
+            this.isRecording = !this.isRecording;
+            this.overlay = false;
+          }
         }
     },
 
@@ -93,168 +171,158 @@ export default {
     },
 
     onClick(e) {
-      this.countDownTimer()
+      if (!this.isRecording && !this.hasCountDownStarted) {
+        this.countDownTimer();
+        this.hasCountDownStarted = true;
+        this.overlay = !this.overlay
+      } 
       
+      if (this.isRecording) {
+        this.onStop();
+      }
       
+    },
+
+    async submitAudio() {
+      this.dialog = true
+      const file = this.recordingsData[this.selectedFileIndex][2];
+      console.log(file)
+      try {
+        let formData = new FormData()
+        formData.set('eid', this.currEx.id)
+        console.log(this.currEx.id, file)
+        formData.append('audio', file);
+        let recording = (await RecordingService.create(formData)).data.recording
+        let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
+        const transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
+      } catch (error) {
+        console.log(error)
+        this.submissionError = true;
+      } finally {
+        this.dialog = false
+      }
     },
 
     onStart() {
       // this.countDownTimer()
+      this.mediaRecorder.start()
       this.startTimer()
       const record = document.getElementById('recButton');
-      navigator.mediaDevices.getUserMedia(this.constraints).then(this.onSuccess, this.onError);
-    
     },
 
     onStop() {
+      console.log("Recorder state: ", this.mediaRecorder.state);
       this.stopTimer();
       this.mediaRecorder.stop();
       this.countDown = this.defaultCountDown;
-      console.log("Recorder state: ", this.mediaRecorder.state);
-      const soundClips = document.querySelector('.sound-clips');
+      this.isRecording = false;
+      this.hasCountDownStarted = false;
+    },
+
+    onDelete(recordingData) {
+      this.recordingsData = this.recordingsData.filter(x => x != recordingData)
     },
 
     onSuccess(stream) {
-      const record = document.querySelector('.record');
-      const stop = document.querySelector('.stop');
       const soundClips = document.querySelector('.sound-clips');
       const mainSection = document.querySelector('.main-controls');
       console.log(soundClips, mainSection)
       const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.start();
+      this.visualize(stream);
+
+      this.mediaRecorder = mediaRecorder;
       var chunks = [];
       console.log("Recorder state: ", mediaRecorder.state);
 
-      mediaRecorder.onstop = function(e) {
+      mediaRecorder.onstop = (e) => {
         const clipName = prompt('Enter a name for your sound clip?','My recording');
 
-        const clipContainer = document.createElement('article');
-        const clipLabel = document.createElement('label');
-        const audio = document.createElement('audio');
-        const deleteButton = document.createElement('button');
-        const uploadButton = document.createElement('button');
-        const radioInput = document.createElement('input');
-        
-        clipContainer.classList.add('clip');
-        clipContainer.style.margin = '0 auto'
-        audio.setAttribute('controls', '');
-        uploadButton.textContent = 'UPLOAD THIS';
-        deleteButton.textContent = 'X';
-        deleteButton.className = 'delete';
-        clipLabel.className = 'date';
-
-        // Style for elements
-        audio.style.padding = '20px 0 0 0';
-        audio.style.position = 'relative'
-        audio.style.top = '12px'
-        clipContainer.style.display = 'block';
-        clipLabel.style.color = 'blue';
-        clipLabel.style.padding = '10px'
-
-        uploadButton.style.backgroundColor = '#ec5252';
-        // uploadButton.style.position = 'relative'
-        // uploadButton.style.top = '0px'
-        uploadButton.style.padding = '0.3em 1.2em'
-        uploadButton.style.margin = '0.3em 0.3em 0'
-        uploadButton.style.borderRadius = '2em'
-        uploadButton.style.color = 'white'
-        uploadButton.style.fontWeight = 'bold'
-        uploadButton.style.boxSizing = 'border-box'
-
-        deleteButton.style.margin = '10px'
-        deleteButton.style.color = 'red';
-        deleteButton.style.fontWeight = 'bold';
-        deleteButton.style.fontSize = '30px';
-        deleteButton.style.position = 'relative'
-        deleteButton.style.top = '5px'
-
-        radioInput.style.height = '30px'
-        radioInput.style.width = '30px'
-        radioInput.style.position = 'relative'
-        radioInput.style.top = '12px'
-
-        if (clipName === null) {
-          clipLabel.textContent = 'My unnamed clip';
-        } else {
-          clipLabel.textContent = clipName;
-        }
-        // Not using radio input
-        // radioInput.setAttribute('type', 'radio');
-        // radioInput.setAttribute('name', 'radio');
-        // radioInput.setAttribute('value', 1);
-        // clipContainer.appendChild(radioInput);
-
-        clipContainer.appendChild(deleteButton);
-        clipContainer.appendChild(clipLabel);
-        clipContainer.appendChild(audio);
-        clipContainer.appendChild(uploadButton);
-        soundClips.appendChild(clipContainer);
-
-        audio.controls = true;
         var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
         chunks = [];
         const audioURL = window.URL.createObjectURL(blob);
-        audio.src = audioURL;
-        const fileName = clipLabel.textContent.concat(".ogg");
+        const fileName = clipName.concat(".ogg");
         const file = new File([blob], fileName);
-
-        // Download file during testing
-        // const url = window.URL.createObjectURL(file);
-        // var a = document.createElement("a");
-        // document.body.appendChild(a);
-        // a.style = "display: none";
-        // a.href = url;
-        // a.download = fileName;
-        // a.click();
-        // console.log("A", a)
-        // window.URL.revokeObjectURL(url);
-
-
-
-        deleteButton.onclick = function(e) {
-          let evtTgt = e.target;
-          evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
-        }
-
-        uploadButton.onclick = async function() {
-          if (file) {
-            console.log(file)
-            let formData = new FormData()
-            const currExId = document.getElementById("currEx").innerText
-            formData.set('eid', currExId)
-            formData.append('audio', file);
-            let recording = (await RecordingService.create(formData)).data.recording
-            let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
-            const transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
-            console.log('transcribed notes: ', transcribedNotes)
-          } else {
-            alert('Please input an audio file to gain feedback')
-          }
-          
-        }
-
-        clipLabel.onclick = function() {
-          const existingName = clipLabel.textContent;
-          const newClipName = prompt('Enter a new name for your sound clip?');
-          if(newClipName === null) {
-            clipLabel.textContent = existingName;
-          } else {
-            clipLabel.textContent = newClipName;
-          }
-        }
+        this.recordingsData.push([clipName, audioURL, file]);
       }
 
-      mediaRecorder.ondataavailable = function(e) {
+      mediaRecorder.ondataavailable = (e) => {
         chunks.push(e.data);
       }
-
-
-      this.mediaRecorder = mediaRecorder;
     },
 
     onError(err){
       console.log(err)
     },
+    changeFileName(index) {
+      const existingName = this.recordingsData[index][0];
+      const newClipName = prompt('Enter a new name for your sound clip?');
+      var newData = this.recordingsData[index];
+      newData[0] = newClipName
+      console.log(newData)
+
+      if(newClipName === null) {
+        this.recordingsData[index]= newData;
+      } else {
+        this.recordingsData[index] = newData;
+      }
+    },
+
+    visualize(stream) {
+      const canvas = document.querySelector('.visualizer');
+      const canvasCtx = canvas.getContext("2d");
+
+      if(!this.audioCtx) {
+        this.audioCtx = new AudioContext();
+      }
+
+      const source = this.audioCtx.createMediaStreamSource(stream);
+
+      const analyser = this.audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      source.connect(analyser);
+      draw()
+
+      function draw() {
+        const WIDTH = canvas.width
+        const HEIGHT = canvas.height;
+
+        requestAnimationFrame(draw);
+
+        analyser.getByteTimeDomainData(dataArray);
+
+        canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+        canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        canvasCtx.lineWidth = 2;
+        canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
+
+        canvasCtx.beginPath();
+
+        let sliceWidth = WIDTH * 1.0 / bufferLength;
+        let x = 0;
+
+
+        for(let i = 0; i < bufferLength; i++) {
+
+          let v = dataArray[i] / 128.0;
+          let y = v * HEIGHT/2;
+
+          if(i === 0) {
+            canvasCtx.moveTo(x, y);
+          } else {
+            canvasCtx.lineTo(x, y);
+          }
+
+          x += sliceWidth;
+        }
+
+        canvasCtx.lineTo(canvas.width, canvas.height/2);
+        canvasCtx.stroke();
+      }
+    }
 
   }
 }
@@ -271,22 +339,6 @@ export default {
 	border-radius: 35px;
 	margin: 18px;
 	outline: none;
-}
-
-button.submit {
-  padding:0.3em 1.2em;
-  margin:0 0.3em 0.3em 0;
-  border-radius:2em;
-  box-sizing: border-box;
-  font-family:'Roboto',sans-serif;
-  font-weight:300;
-  color:#FFFFFF;
-  background-color:#ec5252;
-  text-align:center;
-}
-
-button.submit:hover{
-  background-color:#4b93bd;
 }
 
 .notRec{
@@ -312,9 +364,59 @@ button.submit:hover{
 	}
 }
 
-.main-controls {
-  width: 50%;
-  margin: 0 auto;
+label.countdown {
+  font-size: 100px;
 }
+
+input[type=radio] {
+   width: 30px;
+   height: 30px;
+}
+.visualizer {
+  position: relative;
+  left: -30px;
+} 
+.audio {
+  position: relative;
+  left: -30px;
+}
+
+.audioName {
+  /* margin-bottom: 5rem;
+  margin-right: 2rem; */
+  position: relative;
+  top: -10px;
+}
+
+canvas {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.submitError {
+  margin: 1.5rem;
+}
+
+button.submit {
+  margin: 2rem;
+}
+
+button.delete {
+  margin-top: 0.5rem;
+  margin-left: 2rem;
+}
+
+.sound-clips {
+  margin: 1rem;
+}
+
+.sound-clip {
+  margin: 1rem;
+}
+
+.clip {
+  padding-bottom: 1rem;
+}
+
 
 </style>

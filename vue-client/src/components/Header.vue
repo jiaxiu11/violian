@@ -15,7 +15,9 @@
         v-btn(depressed to="/login" color="white") Log In
       v-toolbar-items(v-if="$store.state.isUserLoggedIn && !minimiseNav")
         v-btn(depressed to="/course/index" color="white") My Courses
-        v-btn(depressed to="/courses/threads/index" style="position: relative;" color="white") Notifications
+        //- v-btn(depressed to="/courses/threads/index" style="position: relative;" color="white") Notifications
+        //-   #notification {{ notifications }}
+        v-btn(depressed to="/notifications" color="white") Notifications
           #notification {{ notifications }}
         v-btn(depressed @click="logout" color="white") Log Out
 
