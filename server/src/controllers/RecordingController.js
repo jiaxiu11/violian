@@ -2,6 +2,7 @@ const { Recording } = require("../models");
 const { Lesson } = require("../models");
 const { Exercise } = require("../models");
 const { Course } = require("../models");
+const { User } = require("../models");
 const AWS = require("aws-sdk");
 const config = require("../config/config");
 const { sequelize } = require("../models");
@@ -50,6 +51,7 @@ module.exports = {
 
           // Uploading audio file to the bucket
           const response = await s3.upload(params).promise();
+          req.body.UserId = user.id
           req.body.audioUrl = response.Location;
           req.body.audioFilename = req.file.originalname;
 
@@ -57,7 +59,7 @@ module.exports = {
             transaction: t,
           });
           await recording.setExercise(exercise);
-  
+
           res.send({
             recording: recording.toJSON(),
           });
@@ -189,7 +191,7 @@ module.exports = {
     try {
       await sequelize.transaction(async (t) => {
         const { rid } = req.query;
-        const {transcription} = req.body
+        const { transcription } = req.body
         const recording = await Recording.findOne({
           where: {
             id: rid,
@@ -201,14 +203,15 @@ module.exports = {
             error: "Recording information is incorrect",
           });
         }
-          recording.transcription = transcription;
+        recording.transcription = transcription;
+        recording.isRead = 0;
 
-          await Recording.update(recording.dataValues, {
-            where: {
-              id: rid,
-            },
-            transaction: t,
-          });
+        await Recording.update(recording.dataValues, {
+          where: {
+            id: rid,
+          },
+          transaction: t,
+        });
 
         await recording.reload().dataValues;
         res.send({
@@ -219,6 +222,97 @@ module.exports = {
       console.log(err);
       res.status(500).send({
         error: "An error has occured in trying to get transcribed notes",
+      });
+    }
+  },
+
+  async markAsRead(req, res) {
+    try {
+      await sequelize.transaction(async (t) => {
+        const { rid } = req.query;
+        const recording = await Recording.findOne({
+          where: {
+            id: rid,
+          },
+        });
+
+        if (!recording) {
+          return res.status(403).send({
+            error: "Recording information is incorrect",
+          });
+        }
+        recording.isRead = 1;
+
+        await Recording.update(recording.dataValues, {
+          where: {
+            id: rid,
+          },
+          transaction: t,
+        });
+
+        await recording.reload().dataValues;
+        res.send({
+          recording: recording.toJSON(),
+        });
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(500).send({
+        error: "An error has occured in trying to mark comment as read",
+      });
+    }
+  },
+
+  async getUnreadComments(req, res) {
+    try {
+      const user = req.user;
+      const recordings = await Recording.findAll({
+        where: {
+          UserId: user.id,
+          isRead: 0,
+        },
+        raw: true,
+        attributes: [
+          ['updatedAt', 'updated_at'],
+          [sequelize.col('exercise.id'), 'exercise_id'],
+          [sequelize.col('exercise.lesson.id'), 'lesson_id'],
+          [sequelize.col('exercise.lesson.course.id'), 'course_id'],
+          [sequelize.col('user.username'), 'student_name'],
+          [sequelize.col('exercise.lesson.course.tutor.username'), 'tutor_name'],
+        ],
+        include: [
+          {
+            model: Exercise,
+            attributes: [],
+            include: [{
+              model: Lesson,
+              attributes: [],
+              include: [{
+                model: Course,
+                attributes: [],
+                include: [{
+                  model: User,
+                  as: 'Tutor',
+                  attributes: [],
+                }]
+              }]
+            }]
+          },
+          {
+            model: User,
+            attributes: [],
+          }
+        ]
+      });
+
+      console.log(recordings);
+      res.send({
+        recordings: recordings,
+      })
+    } catch (err) {
+      console.log(err);
+      res.status(500).send({
+        error: "An error has occured in trying to get unread feedbacks",
       });
     }
   }

@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
     audioUrl: DataTypes.STRING,
     audioFilename: DataTypes.STRING,
     transcription: DataTypes.STRING,
+    isRead: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1
+    }
   })
 
   Recording.associate = function (models) {
