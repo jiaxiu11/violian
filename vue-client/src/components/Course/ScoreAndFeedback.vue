@@ -10,11 +10,10 @@
             :bpm="currEx.bpm"
             :timeSignature="currEx.timeSignature"
             :barsPerRow="4"
-            :onClickNote="(rowNum, noteIdx)=>{}"
             :onSelectNoteForGreentick="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
-            :isScrolling="false"
-            :shouldIndicateNoteClicked="false"
-            :clickedNoteOnset=null
+            :onClickNote="onClickNote" 
+            :clickedNoteOnset="clickedNoteOnset"
+            :shouldIndicateNoteClicked="shouldIndicateNoteClicked"
           )
 
     v-row
@@ -58,7 +57,7 @@
       )
 
     //- Tutor audio file
-    audio(v-if="isBoth || !isScore" ref="tutorAudio" :src="currEx.videoUrl" type="audio/ogg" @ended="tutorAudioEnd")
+    audio(v-if="isBoth || isScore" ref="tutorAudio" :src="currEx.videoUrl" type="audio/ogg" @ended="tutorAudioEnd")
 
     //- Student audio file
     audio(v-if="isBoth || !isScore" ref="studentAudio" :src="recording.audioUrl" type="audio/ogg" @ended="studentAudioEnd")
@@ -80,6 +79,9 @@ export default {
     "isScore",
     "currEx",
     "recording",
+    "onClickNote",
+    "clickedNoteOnset",
+    "shouldIndicateNoteClicked"
   ],
   components: {
     'line-graph': EvaluationLineGraph
@@ -99,13 +101,14 @@ export default {
       // auto feedback
       transcribedNotes: [],
       tutorFocused: true,
-      scoreYInterval: 137,
+      yInterval: 137,
       newAudio: null,
       transformX: 0,
       transformY: 0,
       transformXStudent: 30,
-      transformYStudent: 0,
+      transformYStudent: 30,
       canvasWidth: 0,
+      lineGraphWidth: 0,
       activeRow: 0,
       activeRowStudent: 1,
       activeNote: 0,
@@ -122,20 +125,12 @@ export default {
 
   watch: {
     recording: function (val) {
-      this.transcribedNotes = splitFeedbackIntoRows(JSON.parse(val.transcription));
+      this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(val.transcription));
     },
   },
 
   methods: {
     async drawScore () {
-      this.currEx.melody = this.currEx.melody.split('-')
-      this.demoStartTime = this.currEx.demoStartTime
-      this.notesInBars = vexUI.notesToBars(this.currEx.melody, this.currEx.timeSignature)
-    
-      for (let i = 0; i < this.notesInBars.length; i += 4) {
-        this.scoreRows.push(this.notesInBars.slice(i, i + 4).flat())
-      }
-
       await this.$nextTick()
       
       var wrapper = document.getElementById(`vexflow-wrapper-${0}`)
@@ -176,15 +171,23 @@ export default {
       var tick = document.getElementById('student-tick')
       tick.parentNode.removeChild(tick)
       var wrapper = document.getElementById('lineGraph0')
+      this.lineGraphWidth = wrapper.offsetWidth
       wrapper.appendChild(tick)
-      this.scoreYInterval = 137 + 150
     },
 
     play () {
-      if (this.tutorFocused) {
-        this.playTutorAudio()
+      if (this.isBoth) {
+        if (this.tutorFocused) {
+          this.playTutorAudio()
+        } else {
+          this.playStudentAudio()
+        }
       } else {
-        this.playStudentAudio()
+        if (this.isScore) {
+          this.playTutorAudio
+        } else {
+          this.playStudentAudio()
+        }
       }
     },
 
@@ -226,7 +229,7 @@ export default {
               this.activeRow += 1
               if (this.activeRow < this.notePositions.length)
                 document.getElementById(`vexflow-wrapper-${this.activeRow}`).scrollIntoView(true, {behavior: "smooth"})
-              this.transformY = this.transformY + this.scoreYInterval + 10
+              this.transformY = this.transformY + this.yInterval + 10
             } else {
               this.activeNote += 1
             }
@@ -259,7 +262,7 @@ export default {
     updateStudentPos (rowNum, left) {
       this.tutorFocused = false
       this.transformXStudent = left
-      this.transformYStudent = (rowNum - 1) * (this.scoreYInterval)
+      this.transformYStudent = (rowNum - 1) * (this.yInterval) + 30
       this.$refs['studentAudio'].currentTime = ((rowNum - 1) + (left - 30) / (this.canvasWidth - 50)) * this.secondsPerRow
     },
 
@@ -273,16 +276,16 @@ export default {
         if (currTime < endOfRowTime) {
           // move within this row
           let timeFraction = (currTime % this.secondsPerRow) / this.secondsPerRow
-          this.transformXStudent = (this.canvasWidth - 50) * timeFraction + 30
+          this.transformXStudent = (this.lineGraphWidth - 50) * timeFraction + 30
         } else {
           // move to next row
           this.activeRowStudent += 1
-          if (this.activeRowStudent > this.notePositions.length) {
+          if (this.activeRowStudent > this.scoreRows.length) {
             cancelAnimationFrame(this.animationFrame)
             return
           }
           document.getElementById(`lineGraph${this.activeRowStudent - 1}`).scrollIntoView(true, {behavior: "smooth"})
-          this.transformYStudent = this.transformY + this.scoreYInterval
+          this.transformYStudent = this.transformYStudent + this.yInterval
           this.transformXStudent = 30
         }
 
@@ -319,15 +322,21 @@ export default {
       this.tutorFocused = true
       let mousePos = vexUtils.getMousePositionInCanvas(e.srcElement, e)
       let rowNum = parseInt(e.srcElement.id.split('-')[2])
+      let minOffset = 900719925474099
+      let idx = 0
       for (let i = 0; i < this.notePositions[rowNum].length; i++) {
-        if (mousePos.x > this.notePositions[rowNum][i].x && mousePos.x < this.notePositions[rowNum][i].x + this.notePositions[rowNum][i].w) {
-          this.transformX = this.notePositions[rowNum][i].x
-          this.transformY = rowNum * (this.scoreYInterval)
-          this.$refs['tutorAudio'].currentTime = this.noteOnsetDurations[rowNum][i].onset
-          this.activeRow = rowNum
-          this.activeNote = i
+        let offset = Math.abs(mousePos.x - this.notePositions[rowNum][i].x)
+        if (offset < minOffset) {
+          minOffset = offset
+          idx = i
         }
       }
+
+      this.transformX = this.notePositions[rowNum][idx].x
+      this.transformY = rowNum * (this.yInterval)
+      this.$refs['tutorAudio'].currentTime = this.noteOnsetDurations[rowNum][idx].onset
+      this.activeRow = rowNum
+      this.activeNote = idx
     },
 
     canvasMouseLeave (e) {
@@ -369,13 +378,24 @@ export default {
   },
 
   mounted: function () {
+    this.currEx.melody = this.currEx.melody.split('-')
+    this.demoStartTime = this.currEx.demoStartTime
+    this.notesInBars = vexUI.notesToBars(this.currEx.melody, this.currEx.timeSignature)
+  
+    for (let i = 0; i < this.notesInBars.length; i += 4) {
+      this.scoreRows.push(this.notesInBars.slice(i, i + 4).flat())
+    }
+    
     if (this.isBoth) {
+      this.yInterval = 137 + 150
       this.drawScore()
       this.drawLineGraph()
     } else {
       if (this.isScore) {
+        this.yInterval = 137
         this.drawScore()
       } else {
+        this.yInterval = 150
         this.drawLineGraph()
       }
     }
