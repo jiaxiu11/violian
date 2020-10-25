@@ -2,8 +2,8 @@
     div
         div(:id="plotDivId" :ref="plotContainerId" style="position: relative;")
         div(v-if="selectedNote  && showTooltip" class="tooltip" :style="{top: tooltipTop + 'px', left:tooltipLeft + 'px'}")
-            v-alert(dense border="left" color="cyan" colored-border elevation="2")
-                div note: {{selectedNote.note}}, onset: {{selectedNote.onset}}, duration: {{selectedNote.duration}}
+            v-alert(dense border="left" :color="selectedNote.comment ? commentedNoteColor:'#9ab3f5'" colored-border elevation="2")
+                div Note: {{selectedNote.note}}
                 div(v-if="selectedNote.comment") Comment: {{selectedNote.comment}}
 
 </template>
@@ -48,6 +48,10 @@ export default {
         this.graph.layout.shapes[shapeCount - 1].type !== "line"
       ) {
         this.graph.layout.shapes.splice(-1, 1);
+        return;
+      }
+
+      if (val === null) {
         return;
       }
 
@@ -226,8 +230,8 @@ export default {
           x1: x,
           y1: y1,
           line: {
-            color: "#bdbdbd",
-            width: 2
+            color: this.barDividerColor,
+            width: 1
           }
         };
         barDividers.push(divider);
@@ -238,15 +242,15 @@ export default {
       return notes.map(note => note.onset + note.duration / 2);
     },
     getBarYValsForNotes(notes) {
-      return Array(notes.length).fill(0.1);
+      return Array(notes.length).fill(0.16);
     },
     getBarBaseValsForNotes(notes) {
       return notes.map(note => {
-        return this.getLineSegmentYValForMusicNote(note) - 0.05;
+        return this.getLineSegmentYValForMusicNote(note) - 0.08;
       });
     },
     getBarWidthValsForNotes(notes) {
-      return notes.map(note => note.duration);
+      return notes.map(note => note.duration - 0.02);
     },
     getBarColorsForNotes(notes) {
       return notes.map(note =>
@@ -265,7 +269,7 @@ export default {
         y0: 0,
         x1: note.onset + note.duration,
         y1: 1,
-        fillcolor: "#d3d3d3",
+        fillcolor: this.noteClickedIndicationColor,
         opacity: 0.2,
         line: {
           width: 0
@@ -284,7 +288,6 @@ export default {
             width: this.getBarWidthValsForNotes(row),
             base: this.getBarBaseValsForNotes(row),
             text: this.getAnnotationsForNotes(row),
-            // hovertemplate: "<b>%{text}</b><extra></extra>",
             hoverinfo: "none",
             marker: {
               color: this.getBarColorsForNotes(row)
@@ -305,9 +308,9 @@ export default {
             tickvals: this.getTickValsForRow(this.rowNum - 1),
             ticktext: this.getTickTextsForRow(this.rowNum - 1),
             tickfont: {
-              family: "Old Standard TT, serif",
+              family: "Roboto",
               size: 10,
-              color: "Brown"
+              color: "Black"
             }
           },
           yaxis: {
@@ -316,9 +319,9 @@ export default {
             tickvals: [0, 1, 2, 3],
             ticktext: ["C3", "C4", "C5", "C6"],
             tickfont: {
-              family: "Old Standard TT, serif",
+              family: "Roboto",
               size: 10,
-              color: "Brown"
+              color: "Black"
             }
           },
           height: 150,
@@ -330,7 +333,7 @@ export default {
             pad: 8
           },
           shapes: this.getBarDividers(this.rowNum - 1).concat(
-            this.getShapeToIndicateNoteAsClicked(this.selectedNote)
+            this.getShapeToIndicateNoteAsClicked(this.clickedNote)
           )
         },
         config: {
@@ -359,9 +362,11 @@ export default {
       barsPerRow: 4,
       secondsPerRow: 0,
       graph: null,
-      noteColor: "DarkSlateGray",
+      noteColor: "#9ba4b4",
       highlightedNoteColor: "#e0e5e5",
-      commentedNoteColor: "DarkSeaGreen"
+      commentedNoteColor: "#ffa62b",
+      noteClickedIndicationColor: "Grey",
+      barDividerColor: "Black"
     };
   }
 };
