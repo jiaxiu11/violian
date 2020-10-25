@@ -273,6 +273,7 @@ module.exports = {
         },
         raw: true,
         attributes: [
+          ['id', 'recording_id'],
           ['updatedAt', 'updated_at'],
           [sequelize.col('exercise.id'), 'exercise_id'],
           [sequelize.col('exercise.lesson.id'), 'lesson_id'],
