@@ -335,6 +335,9 @@ module.exports = {
           [sequelize.col('user.username'), 'student_name'],
           [sequelize.col('exercise.lesson.course.tutor.username'), 'tutor_name'],
         ],
+        order: [
+          ['updatedAt','DESC'],
+        ],
         include: [
           {
             model: Exercise,
