@@ -4,7 +4,7 @@
 # paths
 ## login
 - POST `/register { email, password }` - `{ user: <userObj>, token: jwtSignedToken}`
-- GET `/login { email, password }` - `{ user: <userObj>, token: jwtSignedToken}`
+- POST `/login { email, password }` - `{ user: <userObj>, token: jwtSignedToken}`
 
 ## users
 - GET `/user/list` - `{ users: [<userObj>] }`
@@ -41,6 +41,9 @@
   - GET `/recording/list?eid=` - `{ recordings: [<recordingObj>] }`
   - DELETE `/recording/del?rid=` - `{ data: ok }`
   - GET `/recording/get-notes?rid=` - `{ recording: [<recordingObj>] }`
+  - POST `/recording/update-notes?rid= { transcription }` - `{ recording: [<recordingObj>] }`
+  - POST `/recording/mark?rid=` - `{ recording: [<recordingObj>] }`
+  - GET `/recording/get-unread-comments` - `{ recordings: [{ recording_id, updated_at, exercise_id, lesson_id, course_id, student_name, tutor_name }]}`
 
 ## subscriptions for student and course
 - POST `/subscribe/new { studentId, courseId }` - `{ data: ok }`
