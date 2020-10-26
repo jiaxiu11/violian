@@ -20,5 +20,9 @@ export default {
 
   delete (recordingId) {
     return Api().delete(`recording/del?rid=${recordingId}`)
+  },
+
+  getUnreadComments () {
+    return Api().get(`recording/get-unread-comments`)
   }
 }

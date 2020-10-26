@@ -1,89 +1,96 @@
 <template>
+  <v-container text-center>
+  <h1 style="margin:2rem;">Notifications</h1>
+
   <v-card
-    class="mx-auto mt-10"
+    class="mx-auto"
     max-width="700"
+    tile
   >
-    <v-toolbar
-      color="teal"
-      dark
-    >
-      <v-app-bar-nav-icon></v-app-bar-nav-icon>
-      <v-toolbar-title>My Courses</v-toolbar-title>
-      <v-spacer></v-spacer>
-      
-    </v-toolbar>
-
-    <v-list>
-      <v-list-group
-        v-for="item in items"
-        :key="item.title"
-        v-model="item.active"
-        :prepend-icon="item.action"
-        no-action
+    <v-list rounded>
+      <!-- <v-subheader>Unread Notifications</v-subheader> -->
+      <v-list-item-group
+        color="primary"
       >
-        <template v-slot:activator>
-          <v-list-item-content>
-            <v-list-item-title class="courseTitle" v-text="item.title"></v-list-item-title>
-          </v-list-item-content>
-        </template>
-
         <v-list-item
-          v-for="child in item.items"
-          :key="child.title"
+          v-for="(item, i) in recordings"
+          :key="i"
         >
-          <v-list-item-content>
-            <v-list-item-title >
+          <v-list-item-icon>
+            <v-icon v-text="item.icon"></v-icon>
+          </v-list-item-icon>
+          <v-list-item-content @click="redirect(i)">
+            <v-list-item-title>
               <v-row>
-              <v-col cols="9">
-              <a class="comment" href="/feedback/show/1/lesson/1">{{child.title}} has a new submission from AAA</a>
-              </v-col>
-            <v-chip
-              class="ma-2"
-              color="pink"
-              label
-              text-color="white"
-            >11/11/2020 22:55
-            </v-chip>
-            </v-row>
+                <v-col cols="8">
+                  <label class="comment" @click="redirect(i)"  v-text="getMessage(i)"></label>
+                </v-col>
+                <v-col cols="3">
+                  <v-chip style="margin-right:1rem; margin-bottom:2rem;"
+                    class="ma-2"
+                    color="#fffcbd"
+                    label
+                  >{{item.updated_at}}
+                  </v-chip>
+                </v-col>
+              </v-row>
             </v-list-item-title>
-
           </v-list-item-content>
         </v-list-item>
-      </v-list-group>
+      </v-list-item-group>
     </v-list>
   </v-card>
+  </v-container>
 </template>
 
 <script>
-  export default {
-    data: () => ({
-      items: [
-        {
-          action: 'mdi-ticket',
-          items: [{ title: 'List Item' }],
-          title: 'Course 1',
-        },
-        {
-          action: 'mdi-silverware-fork-knife',
-          active: true,
-          items: [
-            { title: 'Breakfast & brunch' },
-            { title: 'New American' },
-          ],
-          title: 'Course 2',
-        },
-        {
-          action: 'mdi-school',
-          items: [{ title: 'List Item' }],
-          title: 'Course 3',
-        }
-      ],
-    }),
+import RecordingService from "@/services/RecordingService"
 
-    methods: {
-      redirect() {
-      }
+export default {
+  data() {
+    return {
+    recordings2: [],
+    recordings:[
+      {
+        recording_id: '1',
+        updated_at: '11/12/2020 11:12',
+        course_name: 'Course AAA',
+        course_id: '1',
+        lesson_id: '1',
+        student_name: 'Student',
+        tutor_name: 'Tutor'
+      },
+      {
+        recording_id: '2',
+        updated_at: '11/12/2020 11:12',
+        course_name: 'Course BBB',
+        course_id: '2',
+        lesson_id: '2',
+        student_name: 'Student',
+        tutor_name: 'Tutor'
+      },
+    ],
+    
     }
+  },
+
+  methods: {
+    getMessage(index) {
+      const item = this.recordings[index];
+      return (`${item.course_name} has a new submission from ${item.student_name}`);
+    },
+    redirect(index) {
+      console.log("clicked")
+      const item = this.recordings[index];
+      window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}`;
+    }
+  },
+  async created() {
+    console.log('started'),
+    this.recordings2 = (await RecordingService.getUnreadComments()).data.recordings;
+    this.recordings2.sort((x, y) => x.updated_at - y.updated_at);
+    console.log(this.recordings2)
+  }
     
   }
 </script>
