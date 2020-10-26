@@ -23,6 +23,9 @@
                   //- div.text-center.py-4.card-title Record your practice
                   div.px-4.pt-4.pb-0.text-left.text-primary Record your practice audio either on our platform or upload the audio file of your recording. The tutor will give feedback as soon as possible!
                   v-card-actions
+                    v-btn.mx-auto.px-6.action-button(large color="indigo" dark @click="modal = true") Upload
+                      v-icon(right dark) mdi-cloud-upload
+
                     v-btn.mx-auto.px-6.action-button(large color="indigo" dark :to="`/recording/new/${course.id}/lesson/${lesson.id}`") Record
                       v-icon(right dark size="20") mdi-record-circle-outline
 
@@ -68,6 +71,20 @@
                 a.link.pl-4.py-5(style="font-size: 16px; background-color:#C5CAE9;") {{ lessonIdx + 1 }}. {{ currLesson.name }}
               v-list-item-content.py-0.link(v-else-if="currLesson != lesson")
                 a.link.pl-4.py-5(style="font-size: 16px;" @click="goToLesson($event, currLesson)") {{ lessonIdx + 1 }}. {{ currLesson.name }}
+
+      //- modal
+      v-row(justify='center')
+        v-dialog(v-model='modal' max-width='320')
+          v-card
+            v-container.text-center
+              v-row
+                v-col(cols="12")
+                  h2 Audio upload
+              v-row(justify="center")
+                v-col(cols="12")
+                  v-file-input.pr-3(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense accept="audio/*")
+                  v-btn(color="#ec5252" dark @click="submitAudio()" style="margin-top: 2px;") Submit
+
 </template>
 
 <script>
@@ -101,9 +118,6 @@ export default {
 
       // exercise info
       currEx: null,
-      recordings: [],
-      newAudio: null,
-      currRecording: null,
 
       // video events
       isVideoContent: true,
@@ -118,9 +132,8 @@ export default {
       fullHeight: false,
       opened: [0],
       videoSrc: '',
-
-      // tabs
-      tab: null,
+      modal: false,
+      newAudio: null,
     }
   },
   watch: {
@@ -159,10 +172,7 @@ export default {
     },
 
     async submitAudio (event) {
-      // let feedback = (await RecordingService.getFeedback(5)).data.recording.transcription
-      // this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
       if (this.newAudio) {
-        console.log(this.newAudio);
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
         formData.append('audio', this.newAudio)
@@ -171,6 +181,7 @@ export default {
         recording.transcription = feedback
         this.recordings.push(recording)
         this.currRecording = recording
+        this.$router.push(`/feedback/show/${this.course.id}/lesson/${this.lesson.id}`)
       } else {
         alert('Please input an audio file to gain feedback')
       }

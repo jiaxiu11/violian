@@ -49,7 +49,7 @@ export default {
       this.recordings = recordings
 
       if (recordings.length > 0) {
-        this.currRecording = recordings[0]
+        this.currRecording = recordings[recordings.length - 1]
       }
     },
 
