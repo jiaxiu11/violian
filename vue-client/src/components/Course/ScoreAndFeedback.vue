@@ -17,13 +17,13 @@
           )
 
     v-row
-      v-col
-        v-btn(@click="play" v-if="isBoth || !isScore") Play
-        v-btn(@click="pause" v-if="isBoth || !isScore") Pause
+      v-col(v-if="isNewFeedback || isShowFeedback")
+        v-btn(@click="play") Play
+        v-btn(@click="pause") Pause
 
       //- this is the rolling tick
       img(
-        v-if="isBoth || isScore"
+        v-if="isNewRecording || isShowFeedback"
         :src="require('../../assets/tick.png')" 
         style=`
           position:absolute; 
@@ -40,7 +40,7 @@
       )
 
       img(
-        v-if="isBoth || !isScore"
+        v-if="isNewFeedback || isShowFeedback"
         :src="require('../../assets/tick.png')"
         style=`
           position:absolute;
@@ -57,10 +57,10 @@
       )
 
     //- Tutor audio file
-    audio(v-if="isBoth || isScore" ref="tutorAudio" :src="currEx.videoUrl" type="audio/ogg" @ended="tutorAudioEnd")
+    audio(v-if="isShowFeedback" ref="tutorAudio" :src="currEx.videoUrl" type="audio/ogg" @ended="tutorAudioEnd")
 
     //- Student audio file
-    audio(v-if="isBoth || !isScore" ref="studentAudio" :src="recording.audioUrl" type="audio/ogg" @ended="studentAudioEnd")
+    audio(v-if="isNewFeedback || isShowFeedback" ref="studentAudio" :src="recording.audioUrl" type="audio/ogg" @ended="studentAudioEnd")
 </template>
 
 <script>
@@ -75,13 +75,16 @@ import RecordingService from "@/services/RecordingService"
 export default {
   name: 'Score',
   props: [
-    "isBoth",
-    "isScore",
     "currEx",
     "recording",
     "onClickNote",
     "clickedNoteOnset",
-    "shouldIndicateNoteClicked"
+    "shouldIndicateNoteClicked",
+    "elapsedTime",
+    "start",
+    "isNewFeedback",
+    "isShowFeedback",
+    "isNewRecording"
   ],
   components: {
     'line-graph': EvaluationLineGraph
@@ -127,6 +130,14 @@ export default {
     recording: function (val) {
       this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(val.transcription));
     },
+
+    start: function (val) {
+      if (val) {
+        this.playTutorAudio()
+      } else {
+        this.tutorAudioEnd()
+      }
+    }
   },
 
   methods: {
@@ -148,19 +159,23 @@ export default {
         }).init())
 
         this.handlers[i].importNotes(this.scoreRows[i], this.currEx.timeSignature)
-        this.handlers[i].canvas.addEventListener('mousemove', this.canvasMouseMove, false)
-        this.handlers[i].canvas.addEventListener('mouseup', this.canvasMouseUp, false)
-        this.handlers[i].canvas.addEventListener('mouseleave', this.canvasMouseLeave, false)
-        this.handlers[i].canvas.style.cursor = 'pointer'
+        if (this.isShowFeedback) {
+          this.handlers[i].canvas.addEventListener('mousemove', this.canvasMouseMove, false)
+          this.handlers[i].canvas.addEventListener('mouseup', this.canvasMouseUp, false)
+          this.handlers[i].canvas.addEventListener('mouseleave', this.canvasMouseLeave, false)
+          this.handlers[i].canvas.style.cursor = 'pointer'
+        }
         this.notePositions.push(this.handlers[i].getNotePositions().filter(x => x.length > 0).flat())
         this.noteOnsetDurations.push(vexUI.notesToOnsetDuration(this.scoreRows[i], this.currEx.timeSignature, this.currEx.bpm, i))
       }
     
       // set up and append the tick to the score
-      this.transformX = parseFloat(this.notePositions[0][0].x)
-      var tick = document.getElementById('tick')
-      tick.parentNode.removeChild(tick)
-      wrapper.appendChild(tick)
+      if (this.isNewRecording || this.isShowFeedback) {
+        this.transformX = parseFloat(this.notePositions[0][0].x)
+        var tick = document.getElementById('tick')
+        tick.parentNode.removeChild(tick)
+        wrapper.appendChild(tick)
+      }
     },
 
     async drawLineGraph () {
@@ -176,18 +191,14 @@ export default {
     },
 
     play () {
-      if (this.isBoth) {
+      if (this.isShowFeedback) {
         if (this.tutorFocused) {
           this.playTutorAudio()
         } else {
           this.playStudentAudio()
         }
-      } else {
-        if (this.isScore) {
-          this.playTutorAudio
-        } else {
-          this.playStudentAudio()
-        }
+      } else if (this.isNewFeedback) {
+        this.playStudentAudio()
       }
     },
 
@@ -206,10 +217,17 @@ export default {
         this.handlers[i].canvas.removeEventListener('mousemove', this.canvasMouseMove, false)
       }
 
-      this.$refs['tutorAudio'].play()
+      if (this.isShowFeedback) {
+        this.$refs['tutorAudio'].play()
+      }
 
       let animate = () => {
-        let currTime = this.$refs['tutorAudio'].currentTime - this.demoStartTime
+        let currTime = 0
+        if (this.isNewRecording) {
+          currTime = this.elapsedTime
+        } else {
+          currTime = this.$refs['tutorAudio'].currentTime - this.demoStartTime
+        }
         if (currTime > this.demoStartTime) {
           currTime = currTime - this.demoStartTime
           let currNoteOnsetDuration = this.noteOnsetDurations[this.activeRow][this.activeNote]
@@ -386,18 +404,15 @@ export default {
       this.scoreRows.push(this.notesInBars.slice(i, i + 4).flat())
     }
     
-    if (this.isBoth) {
+    if (this.isNewFeedback || this.isShowFeedback) {
       this.yInterval = 137 + 150
       this.drawScore()
       this.drawLineGraph()
-    } else {
-      if (this.isScore) {
-        this.yInterval = 137
-        this.drawScore()
-      } else {
-        this.yInterval = 150
-        this.drawLineGraph()
-      }
+      if (this.isNewFeedback)
+        this.tutorFocused = false
+    } else if (this.isNewRecording) {
+      this.yInterval = 137
+      this.drawLineGraph()
     }
   }
 }

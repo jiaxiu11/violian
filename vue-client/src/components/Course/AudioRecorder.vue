@@ -75,7 +75,7 @@
 import RecordingService from "@/services/RecordingService"
 export default {
   name: 'AudioRecorder',
-  props: ['currEx'],
+  props: ['currEx', 'start'],
 
   data () {
     return {
@@ -160,8 +160,9 @@ export default {
 
     startTimer() {
       this.timer = setInterval(() => {
-        this.elapsedTime += 1000;
-      }, 1000);
+        this.elapsedTime += 50;
+        this.$emit('timeUpdate', this.elapsedTime)
+      }, 50);
     },
 
     stopTimer() {
@@ -208,6 +209,7 @@ export default {
       this.mediaRecorder.start()
       this.startTimer()
       const record = document.getElementById('recButton');
+      this.start()
     },
 
     onStop() {
