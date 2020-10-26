@@ -4,10 +4,7 @@
       v-row
         v-col(cols="12")
           h1.font-weight-bold Record your practice!
-      audio-recorder(v-if="currEx" :currEx="currEx" v-on:timeUpdate="updateElapsedTime" :start="onStart")
-      v-row
-        v-col
-          score-feedback(v-if="currEx" :currEx="currEx" :isNewRecording="true" :elapsedTime="elapsedTime/1000" :start="start")
+      audio-recorder(v-if="currEx" :currEx="currEx" :courseId="course.id" :lessonId="lesson.id")
 
 </template>
 
@@ -29,19 +26,7 @@ export default {
       course: null,
       lesson: null,
       currEx: null,
-
-      elapsedTime: 0,
-      start: false
     }
-  },
-  methods: {
-    updateElapsedTime (time) {
-      this.elapsedTime = time
-    },
-
-    onStart () {
-      this.start = true
-    },
   },
 
   created: async function () {

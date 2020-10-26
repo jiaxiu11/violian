@@ -6,40 +6,76 @@
       <label class="countdown">{{ countDown }} </label>
     </v-overlay>
 
-    <v-row>
-      <v-col cols="12">
-        <section class="main-controls">
-          <v-row justify="center">
-            <v-col cols="12">
-              <canvas class="visualizer" justify="center" height="60px"></canvas>
-            </v-col>
-          </v-row>
-          <button id="recButton" class="notRec" @click="onClick"></button>
-          <v-btn class="mx-auto px-6 action-button" large @click="onClick"> Record
-            <v-icon right dark size="20" color="red"> 
-              mdi-record-circle-outline
-            </v-icon>
-          </v-btn>
-          <v-btn
-            class="mx-2"
-            fab
-            small
-            icon
-            elevation="2"
-            @click="onClick"
-          >
-            <v-icon color="#747474">
+    <v-row class="main-controls" justify="center">
+      <v-col cols="10" class="text-center" style="border: 1px solid #E0E0E0; border-radius:10px;">
+        <!-- <v-row justify="center">
+          <v-col cols="12">
+            <canvas class="visualizer" justify="center" height="60px"></canvas>
+          </v-col>
+        </v-row>
+        <button id="recButton" class="notRec" @click="onClick"></button> -->
+        <!-- <v-btn class="mx-auto px-6 action-button" large @click="onClick"> Record
+          <v-icon right dark size="20" color="red"> 
+            mdi-record-circle-outline
+          </v-icon>
+        </v-btn> -->
+        <div style="position:relative;">
+          <v-btn fab icon elevation="3" @click="onClick" medium v-if="!isRecording">
+            <v-icon large color="#747474">
               mdi-microphone
             </v-icon>
           </v-btn>
-          <label> {{ formattedElapsedTime }} </label>
-        </section>
+          <v-btn icon color="#C62828" @click="onClick" height="56" width="56" v-if="isRecording">
+            <v-icon size="48">
+              mdi-stop-circle
+            </v-icon>
+          </v-btn>
+          <v-chip style="position:absolute; bottom:0; left:calc(50% + 48px);"><strong>{{ formattedElapsedTime }}</strong></v-chip>
+          <v-chip style="position:absolute; bottom:0; left:calc(70%);">
+            <v-icon left>
+              mdi-music-note-eighth
+            </v-icon>
+            <strong>= {{ currEx.bpm }}</strong>
+          </v-chip>
+        </div>
+
+        <v-divider class="my-4" v-show="showSubmit"></v-divider>
+        
+        <v-list flat class="py-0">
+          <v-list-item-group v-model="selectedFileIndex" active-class>
+            <v-list-item v-for='(recordingData, index) in recordingsData' :key="index">
+              <template v-slot:default="{ active }">
+                <v-list-item-action>
+                  <v-checkbox :input-value="active"></v-checkbox>
+                </v-list-item-action>
+
+                <v-list-item-content class="py-0">
+                  <v-list-item-title @click="changeFileName(index)">
+                    {{ recordingData[0] }}
+                  </v-list-item-title>
+                </v-list-item-content>
+                <v-list-item-content class="py-0" style="overflow:visible;">
+                  <v-list-item-title>
+                    <audio controls :src='recordingData[1]'></audio>
+                  </v-list-item-title>
+                </v-list-item-content>
+                <v-list-item-action>
+                  <v-btn icon color="red" @click="onDelete(recordingData)">
+                    <v-icon>
+                      mdi-trash-can-outline
+                    </v-icon>
+                  </v-btn>
+                </v-list-item-action>
+              </template>
+            </v-list-item>
+          </v-list-item-group>
+        </v-list>
       </v-col>
     </v-row>
 
-    <v-divider v-show="showSubmit"></v-divider>
-    
-    <section class="sound-clips"  >
+    <!-- <v-divider v-show="showSubmit"></v-divider>
+
+    <section class="sound-clips">
       <article class="sound-clip" v-for='(recordingData, index) in recordingsData' :key='index'>
         <v-row justify="center">
           <v-col cols="1">
@@ -60,7 +96,8 @@
         </v-row>
       </article>
     </section>
-    <v-divider v-show="showSubmit"></v-divider>
+    <v-divider v-show="showSubmit"></v-divider> -->
+
     <v-row justify="center">
       <v-btn class="submit" v-show="showSubmit" @click="submitAudio"
       :disabled="dialog" :loading="dialog">Upload</v-btn>
@@ -69,7 +106,8 @@
         v-show="submissionError"
       >An error has occurred</v-alert>
     </v-row>
-    <div class="text-center">
+
+    <!-- <div class="text-center">
       <v-dialog
         v-model="dialog"
         hide-overlay
@@ -87,7 +125,13 @@
           </v-card-text>
         </v-card>
       </v-dialog>
-    </div>
+    </div> -->
+    <v-row>
+      <v-col cols="12">
+        <score-feedback :currEx="currEx" :isNewRecording="true" :elapsedTime="elapsedTime/1000" :start="start">
+        </score-feedback>
+      </v-col>
+    </v-row>
   </div>
 </template>
 
@@ -98,7 +142,12 @@ import ScoreAndFeedback from "@/components/Course/ScoreAndFeedback"
 
 export default {
   name: 'AudioRecorder',
-  props: ['currEx', 'start'],
+  props: ['currEx',
+  'courseId',
+  'lessonId'],
+  components: {
+    'score-feedback': ScoreAndFeedback
+  },
 
   data () {
     return {
@@ -125,8 +174,12 @@ export default {
       hasCountDownStarted: false,
 
       submissionError: false,
-      dialog: false
+      dialog: false,
+      start: false,
+      totalTime: 0,
 
+
+      settings: [],
     }
   },
   watch: {
@@ -153,6 +206,11 @@ export default {
   created() {
     console.log('started'),
     navigator.mediaDevices.getUserMedia(this.constraints).then(this.onSuccess, this.onError);
+
+    this.countDown = parseInt(this.currEx.timeSignature.split('/')[0])
+    this.defaultCountDown = this.countDown
+
+    this.totalTime = this.countDown * 1000 * 60 / this.currEx.bpm * this.currEx.numberOfBars
   },
 
   methods: {
@@ -161,21 +219,22 @@ export default {
             setTimeout(() => {
                 this.countDown -= 1
                 this.countDownTimer()
-            }, 1000)
+            }, 1000 * 60 / this.currEx.bpm)
         }
 
         if (this.countDown == 0) {
-          const record = document.getElementById('recButton');
-          if (record.classList.contains('notRec')) {
-            record.classList.remove('notRec');
-            record.classList.add('Rec');
-          } else {
-            record.classList.add('notRec');
-            record.classList.remove('Rec');
-          }
+          // const record = document.getElementById('recButton');
+          // if (record.classList.contains('notRec')) {
+          //   record.classList.remove('notRec');
+          //   record.classList.add('Rec');
+          // } else {
+          //   record.classList.add('notRec');
+          //   record.classList.remove('Rec');
+          // }
           if (!this.isRecording) {
             this.onStart()
-            this.isRecording = !this.isRecording;
+            this.isRecording = true;
+            this.start = true
             this.overlay = false;
           }
         }
@@ -183,13 +242,17 @@ export default {
 
     startTimer() {
       this.timer = setInterval(() => {
-        this.elapsedTime += 50;
-        this.$emit('timeUpdate', this.elapsedTime)
-      }, 50);
+        this.elapsedTime += 20;
+        if (this.elapsedTime > this.totalTime) {
+          clearInterval(this.timer);
+          if (this.isRecording) {
+            this.onStop();
+          }
+        }
+      }, 20);
     },
 
     stopTimer() {
-      this.showSubmit = true;
       this.elapsedTime = 0;
       clearInterval(this.timer);
     },
@@ -208,6 +271,10 @@ export default {
     },
 
     async submitAudio() {
+      if (this.selectedFileIndex == null) {
+        alert('Please select one of the recordings');
+        return
+      }
       this.dialog = true
       const file = this.recordingsData[this.selectedFileIndex][2];
       console.log(file)
@@ -218,7 +285,8 @@ export default {
         formData.append('audio', file);
         let recording = (await RecordingService.create(formData)).data.recording
         let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
-        const transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))
+        alert('Success!')
+        this.$router.push(`/course/show/${this.courseId}/lesson/${this.lessonId}`)
       } catch (error) {
         console.log(error)
         this.submissionError = true;
@@ -232,15 +300,14 @@ export default {
       this.mediaRecorder.start()
       this.startTimer()
       const record = document.getElementById('recButton');
-      this.start()
     },
 
     onStop() {
       console.log("Recorder state: ", this.mediaRecorder.state);
       this.stopTimer();
+      this.start = false;
       this.mediaRecorder.stop();
       this.countDown = this.defaultCountDown;
-      this.isRecording = false;
       this.hasCountDownStarted = false;
     },
 
@@ -249,11 +316,11 @@ export default {
     },
 
     onSuccess(stream) {
-      const soundClips = document.querySelector('.sound-clips');
-      const mainSection = document.querySelector('.main-controls');
-      console.log(soundClips, mainSection)
+      // const soundClips = document.querySelector('.sound-clips');
+      // const mainSection = document.querySelector('.main-controls');
+      // console.log(soundClips, mainSection)
       const mediaRecorder = new MediaRecorder(stream);
-      this.visualize(stream);
+      // this.visualize(stream);
 
       this.mediaRecorder = mediaRecorder;
       var chunks = [];
@@ -261,7 +328,7 @@ export default {
 
       mediaRecorder.onstop = (e) => {
         const clipName = prompt('Enter a name for your sound clip?','My recording');
-
+        this.isRecording = false;
         var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=vorbis' });
         chunks = [];
         const audioURL = window.URL.createObjectURL(blob);
@@ -442,5 +509,8 @@ button.delete {
   padding-bottom: 1rem;
 }
 
+audio:focus {
+  outline:0;
+}
 
 </style>
