@@ -1,22 +1,43 @@
 <template>
   <div>
-    <v-row justify="center">
     <v-overlay
       :value="overlay"
     >
       <label class="countdown">{{ countDown }} </label>
     </v-overlay>
-  </v-row>
-  <v-container text-center>
-    <section class="main-controls">
-      <v-row justify="center">
-        <canvas class="visualizer" justify="center" height="60px"></canvas>
-      </v-row>
-      <button id="recButton" class="notRec" @click="onClick"></button>
-      <label> {{ formattedElapsedTime }} </label>
-    </section>
-  </v-container>
-  <v-divider v-show="showSubmit"></v-divider>
+
+    <v-row>
+      <v-col cols="12">
+        <section class="main-controls">
+          <v-row justify="center">
+            <v-col cols="12">
+              <canvas class="visualizer" justify="center" height="60px"></canvas>
+            </v-col>
+          </v-row>
+          <button id="recButton" class="notRec" @click="onClick"></button>
+          <v-btn class="mx-auto px-6 action-button" large @click="onClick"> Record
+            <v-icon right dark size="20" color="red"> 
+              mdi-record-circle-outline
+            </v-icon>
+          </v-btn>
+          <v-btn
+            class="mx-2"
+            fab
+            small
+            icon
+            elevation="2"
+            @click="onClick"
+          >
+            <v-icon color="#747474">
+              mdi-microphone
+            </v-icon>
+          </v-btn>
+          <label> {{ formattedElapsedTime }} </label>
+        </section>
+      </v-col>
+    </v-row>
+
+    <v-divider v-show="showSubmit"></v-divider>
     
     <section class="sound-clips"  >
       <article class="sound-clip" v-for='(recordingData, index) in recordingsData' :key='index'>
@@ -73,6 +94,8 @@
 <script>
 /* eslint-disable */
 import RecordingService from "@/services/RecordingService"
+import ScoreAndFeedback from "@/components/Course/ScoreAndFeedback"
+
 export default {
   name: 'AudioRecorder',
   props: ['currEx', 'start'],
@@ -97,7 +120,7 @@ export default {
       timer: null,
 
       //countdown
-      countDown: 1,
+      countDown: 4,
       defaultCountDown: 1,
       hasCountDownStarted: false,
 
@@ -376,7 +399,6 @@ input[type=radio] {
 }
 .visualizer {
   position: relative;
-  left: -30px;
 } 
 .audio {
   position: relative;

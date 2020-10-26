@@ -412,7 +412,7 @@ export default {
         this.tutorFocused = false
     } else if (this.isNewRecording) {
       this.yInterval = 137
-      this.drawLineGraph()
+      this.drawScore()
     }
   }
 }
