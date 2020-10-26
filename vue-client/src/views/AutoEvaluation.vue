@@ -57,7 +57,7 @@ export default {
 
       let updatedTranscriptions = JSON.stringify(this.notesByRow.flat());
       await RecordingService.updateFeedback(
-        this.recordingId,
+        this.recording.id,
         updatedTranscriptions
       );
     },
