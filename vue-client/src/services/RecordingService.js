@@ -24,5 +24,9 @@ export default {
 
   getUnreadComments () {
     return Api().get(`recording/get-unread-comments`)
+  },
+
+  markAsRead(recordingId) {
+    return Api().post(`/recording/mark?rid=${recordingId}`)
   }
 }
