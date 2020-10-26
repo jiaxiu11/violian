@@ -14,9 +14,13 @@ def main():
             return
         url = str(sys.argv[1])
         data, sr = sf.read(io.BytesIO(urlopen(url).read()))
-        filename = 'violin2.wav'
-        # x, sr = librosa.load(filename)
-        x = data[:,0]
+        
+        # check audio channels
+        if len(data.shape) > 1:
+            x = data[:, 0]
+        else:
+            x = data
+            
         hop_length = 100
         onset_env = librosa.onset.onset_strength(x, sr=sr, hop_length=hop_length)
         onset_samples = librosa.onset.onset_detect(x,
