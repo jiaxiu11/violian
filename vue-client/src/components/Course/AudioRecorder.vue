@@ -239,7 +239,7 @@ export default {
       mediaRecorder.onstop = (e) => {
         const clipName = prompt('Enter a name for your sound clip?','My recording');
 
-        var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+        var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=vorbis' });
         chunks = [];
         const audioURL = window.URL.createObjectURL(blob);
         const fileName = clipName.concat(".ogg");

@@ -19,12 +19,20 @@ module.exports = {
         err,
         results
       ) {
-        response = JSON.parse(results[0]);
-        console.log(response);
-        if (response.success) {
-          response.transcribed_notes = JSON.stringify(response.transcribed_notes)
+        if (err) {
+          console.log(err);
+          response = {
+            success: false,
+          }
+          reject('');
+        } else {
+          response = JSON.parse(results[0]);
+          console.log(response);
+          if (response.success) {
+            response.transcribed_notes = JSON.stringify(response.transcribed_notes)
+          }
+          resolve("transcription succeeded");
         }
-        resolve("transcription succeeded");
       });
     });
 
