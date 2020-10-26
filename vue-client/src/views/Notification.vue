@@ -94,7 +94,11 @@ export default {
     },
 
     redirect(item) {
-      window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}`;
+      if (this.isTutor) {
+        window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}`;
+      } else {
+        window.location.href = `/feedback/show/${item.course_id}/lesson/${item.lesson_id}`;
+      }
       RecordingService.markAsRead(item.recording_id)
     }
   },
