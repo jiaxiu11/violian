@@ -1,6 +1,6 @@
 <template lang="pug">
   div(v-if="course && lesson")
-    v-container.pa-0(fluid)
+    v-container
       v-row
         v-col
           h1 Feedback
@@ -17,7 +17,7 @@
       
       v-row
         v-col
-          score-feedback(v-if="currEx && currRecording" :currEx="currEx" :isBoth="true" :recording="currRecording")
+          score-feedback(v-if="currEx && currRecording" :currEx="currEx" :isShowFeedback="true" :recording="currRecording")
 
 </template>
 

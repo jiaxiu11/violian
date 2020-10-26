@@ -3,8 +3,7 @@
     v-container.pa-0(fluid)
       v-row(justify="center")
         h1 Do A Live Recording Here:
-      audio-recorder(v-if="currEx" :currEx="currEx")
-      <v-divider></v-divider>
+      audio-recorder(v-if="currEx" :currEx="currEx" v-on:timeUpdate="updateElapsedTime" :start="onStart")
       v-row(style="margin-top: 20px;" justify="center")
         h1 Or Upload Your Audio File Here:
       v-row(justify="center")
@@ -13,7 +12,7 @@
           v-btn(color="#ec5252" dark @click="submitAudio()" style="margin-top: 2px;") Submit
       v-row
         v-col
-          score-feedback(v-if="currEx" :currEx="currEx" :isScore="true")
+          score-feedback(v-if="currEx" :currEx="currEx" :isScore="true" :elapsedTime="elapsedTime/1000" :start="start")
 
 </template>
 
@@ -36,10 +35,21 @@ export default {
       course: null,
       lesson: null,
       newAudio: null,
-      currEx: null
+      currEx: null,
+
+      elapsedTime: 0,
+      start: false
     }
   },
   methods: {
+    updateElapsedTime (time) {
+      this.elapsedTime = time
+    },
+
+    onStart () {
+      this.start = true
+    },
+
     async submitAudio (event) {
       // let feedback = (await RecordingService.getFeedback(5)).data.recording.transcription
       // this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(feedback))

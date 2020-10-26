@@ -1,33 +1,32 @@
 <template lang="pug">
-    v-card.mx-10.mt-10(height="600px" class="commentCard")
-        v-card-title Click on a note in student's recording to leave comment
-        v-card-subtitle(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
-        v-text-field.mx-10(label="comment" hint="Press enter to save" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
-        v-divider
-        v-card-text(class="commentCardScores" v-on:scroll.passive='onLineGraphScroll')
-            div(v-for="(row, idx) in notesByRow" :key="idx")
-                div(:id="`vexflow-wrapper-${idx}`" style="position:relative")
-                EvaluationLineGraph(
-                    :bpm="bpm"
-                    :transcribedNotes="row"
-                    :rowNum="idx+1"
-                    :onClickNote="onClickNote"
-                    :onSelectNoteForGreentick="(rowNum, left)=>{}"
-                    :isScrolling="isScrolling"
-                    :clickedNoteOnset="selectedRowNum !== null && selectedIndex !== null ? notesByRow[selectedRowNum-1][selectedIndex].onset : null"
-                    :shouldIndicateNoteClicked="true"
-                )
+  v-card.mx-10.mt-10(class="commentCard")
+      v-card-title Click on a note in student's recording to leave comment
+      v-card-subtitle(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
+      v-text-field.mx-10(label="comment" hint="Press enter to save" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
+      v-divider
+      v-card-text(class="commentCardScores" v-on:scroll.passive='onLineGraphScroll')
+        score-feedback(
+          v-if="currEx && recording" 
+          :currEx="currEx" 
+          :recording="recording" 
+          :isNewFeedback="true"
+          :onClickNote="onClickNote" 
+          :clickedNoteOnset="clickedNoteOnset"
+          :shouldIndicateNoteClicked="true"
+        )
 </template>
 
 <script>
 import EvaluationLineGraph from "./EvaluationLineGraph";
 import CourseService from "../services/CourseService";
 import RecordingService from "../services/RecordingService";
-import vexUI from "../plugins/vex";
+import ScoreAndFeedback from "@/components/Course/ScoreAndFeedback"
+
 export default {
-  name: "AutoEvaluation",
+  name: "NewFeedback",
   components: {
-    EvaluationLineGraph
+    EvaluationLineGraph,
+    'score-feedback': ScoreAndFeedback
   },
   methods: {
     onLineGraphScroll() {
@@ -62,107 +61,77 @@ export default {
         updatedTranscriptions
       );
     },
+    clickedNoteOnset () {
+      if (this.selectedRowNum !== null && this.selectedIndex !== null) 
+        return this.notesByRow[this.selectedRowNum-1][this.selectedIndex].onset
+      else
+        return null
+    },
+
     splitTranscriptionIntoRows(notes) {
-      let timePerRow =
-        (60 / this.exercise.bpm) * parseInt(this.exercise.timeSignature[0]) * 4;
+      let timePerRow = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
 
       let newRowStartTime = 0;
       let rows = [];
       rows.push([]);
       for (let i = 0; i < notes.length; i++) {
-        let note = notes[i];
-        if (note.onset < newRowStartTime + timePerRow) {
-          if (note.onset + note.duration <= newRowStartTime + timePerRow) {
-            rows[rows.length - 1].push(note);
+          let note = notes[i];
+          if (note.onset < newRowStartTime + timePerRow) {
+              if (note.onset + note.duration <= newRowStartTime + timePerRow) {
+                  rows[rows.length - 1].push(note);
+              } else {
+                  // split a note that lasts across two rows into two notes
+                  let noteCopy = { ...note };
+                  noteCopy.onset = newRowStartTime + timePerRow;
+                  noteCopy.duration = note.onset + note.duration - (newRowStartTime + timePerRow);
+                  note.duration = note.duration - noteCopy.duration;
+                  rows[rows.length - 1].push(note);
+                  notes[i] = noteCopy;
+                  newRowStartTime = newRowStartTime + timePerRow;
+                  rows.push([]);
+                  i--;
+              }
           } else {
-            // split a note that lasts across two rows into two notes
-            let noteCopy = { ...note };
-            noteCopy.onset = newRowStartTime + timePerRow;
-            noteCopy.duration =
-              note.onset + note.duration - (newRowStartTime + timePerRow);
-            note.duration = note.duration - noteCopy.duration;
-            rows[rows.length - 1].push(note);
-            notes[i] = noteCopy;
-            newRowStartTime = newRowStartTime + timePerRow;
-            rows.push([]);
-            i--;
+              newRowStartTime = newRowStartTime + timePerRow;
+              rows.push([]);
+              i--;
           }
-        } else {
-          newRowStartTime = newRowStartTime + timePerRow;
-          rows.push([]);
-          i--;
-        }
       }
       return rows;
     }
   },
   data() {
     return {
-      scoreRows: [],
-      handlers: [],
-      exercise: null,
-      recordingId: null,
+      course: null,
+      lesson: null,
+      currEx: null,
+      recording: null,
+
       scrollTimeout: null,
       isScrolling: false,
       comment: null,
       selectedRowNum: null,
       selectedIndex: null,
-      bpm: 60,
       notesByRow: [],
       transcribedNotes: []
     };
   },
   created: async function() {
-    let cid = this.$route.params.course_id;
-    let lessonId = this.$route.params.lesson_id;
-    let response = await CourseService.show(cid);
-    let lesson = response.data.course.lessons.find(
-      lesson => lesson.id == lessonId
-    );
-    let currEx = lesson.exercises[0];
-    this.exercise = currEx;
+    let response = await CourseService.show(this.$route.params.course_id)
+    this.course = response.data.course
+    this.lesson = this.course.lessons.find(lesson => lesson.id == this.$route.params.lesson_id)
+    
+    this.videoSrc = this.lesson.exercises[0].videoUrl
+    this.currEx = this.lesson.exercises[0]
 
-    // Get data for line graph
-    let recordings = (await RecordingService.list(currEx.id)).data.recordings;
+    let recordings = (await RecordingService.list(this.currEx.id)).data.recordings
+
     if (recordings.length > 0) {
-      let recordingIndex = 5;
-      this.recordingId = recordings[recordingIndex].id;
-      this.transcribedNotes = JSON.parse(
-        recordings[recordingIndex].transcription
-      );
-      this.notesByRow = this.splitTranscriptionIntoRows(this.transcribedNotes);
+      this.recording = recordings[recordings.length - 1]
     }
 
-    // Get music score
-    if (currEx.useScore) {
-      currEx.melody = currEx.melody.split("-");
-      // let demoStartTime = currEx.demoStartTime
-      let notesInBars = vexUI.notesToBars(currEx.melody, currEx.timeSignature);
-
-      for (let i = 0; i < notesInBars.length; i += 4) {
-        this.scoreRows.push(notesInBars.slice(i, i + 4).flat());
-      }
-
-      await this.$nextTick();
-
-      let wrapper = document.getElementById(`vexflow-wrapper-${0}`);
-      let width = wrapper.offsetWidth;
-      for (let i = 0; i < this.scoreRows.length; i++) {
-        this.handlers.push(
-          new vexUI.Handler(`vexflow-wrapper-${i}`, {
-            numberOfStaves: 4,
-            stavesPerRow: 4,
-            canEdit: false,
-            canvasProperties: {
-              width,
-              id: `vexflow-wrapper-${i}` + "-canvas"
-            }
-          }).init()
-        );
-
-        this.handlers[i].importNotes(this.scoreRows[i], currEx.timeSignature);
-      }
-    }
+    this.transcribedNotes = JSON.parse(recordings[recordings.length - 1].transcription)
+    this.notesByRow = this.splitTranscriptionIntoRows(this.transcribedNotes)
   }
 };
 </script>
