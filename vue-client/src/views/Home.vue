@@ -115,7 +115,11 @@ export default {
 
   computed: {
     is_student () {
-      return this.user.isStudent
+      if (this.user) {
+        return this.user.isStudent
+      } else {
+        return null
+      }
     },
 
     cardsPerRow () {
@@ -160,10 +164,12 @@ export default {
 
   mounted: async function () {
     this.popularCourses = (await CourseService.listAll()).data.courses
-    if (this.is_student) {
-      this.studentCourses = (await SubscriptionService.getSubscriptionInfoOfStudent(this.user.id)).data.courses
-    } else {
-      this.tutorCourses = (await CourseService.list(this.user.id)).data.courses
+    if (this.user) {
+      if (this.is_student) {
+        this.studentCourses = (await SubscriptionService.getSubscriptionInfoOfStudent(this.user.id)).data.courses
+      } else {
+        this.tutorCourses = (await CourseService.list(this.user.id)).data.courses
+      }
     }
   }
 }

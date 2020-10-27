@@ -10,7 +10,7 @@
             v-col.pa-0
               video-player(:exercise="this.lesson.exercises[0]" :videoSrc="videoSrc" v-if="isVideoContent")
 
-          v-container
+          v-container(v-if="is_student")
             v-row.mx-6
               v-col
                 h1.font-weight-bold.py-2 Learn more by interacting with the tutor!
@@ -83,7 +83,7 @@
               v-row(justify="center")
                 v-col(cols="12")
                   v-file-input.pr-3(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense accept="audio/*")
-                  v-btn(color="#ec5252" dark @click="submitAudio()" style="margin-top: 2px;") Submit
+                  v-btn(color="#ec5252" dark @click="submitAudio" style="margin-top: 2px;") Submit
 
 </template>
 
@@ -155,6 +155,10 @@ export default {
       return (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature.split('/')[0]) * 4;
     },
 
+    is_student () {
+      return this.user.isStudent
+    },
+
     ...mapState(["user", "students", "subscribedTutors"])
   },
   methods: {
@@ -178,10 +182,9 @@ export default {
         formData.append('audio', this.newAudio)
         let recording = (await RecordingService.create(formData)).data.recording
         let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
-        recording.transcription = feedback
-        this.recordings.push(recording)
-        this.currRecording = recording
-        this.$router.push(`/feedback/show/${this.course.id}/lesson/${this.lesson.id}`)
+
+        alert('Success!')
+        this.$router.push(`/course/show/${this.courseId}/lesson/${this.lessonId}`)
       } else {
         alert('Please input an audio file to gain feedback')
       }

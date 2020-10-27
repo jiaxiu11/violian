@@ -56,10 +56,11 @@ export default {
       this.$set(this.notesByRow, rowIndex, row);
 
       let updatedTranscriptions = JSON.stringify(this.notesByRow.flat());
-      await RecordingService.updateFeedback(
+      let newRecording = (await RecordingService.updateFeedback(
         this.recording.id,
         updatedTranscriptions
-      );
+      )).data.recording;
+      this.recording = newRecording;
     },
     clickedNoteOnset () {
       if (this.selectedRowNum !== null && this.selectedIndex !== null) 
