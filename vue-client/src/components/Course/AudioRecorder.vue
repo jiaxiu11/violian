@@ -288,7 +288,10 @@ export default {
         return
       }
       this.dialog = true
-      const file = this.recordingsData[this.selectedFileIndex][2];
+      const blob = this.recordingsData[this.selectedFileIndex][2];
+      const clipName = this.recordingsData[this.selectedFileIndex][0];
+      const fileName = clipName.concat(".ogg");
+      const file = new File([blob], fileName);
       console.log(file)
       try {
         let formData = new FormData()
@@ -343,9 +346,8 @@ export default {
         var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=vorbis' });
         chunks = [];
         const audioURL = window.URL.createObjectURL(blob);
-        const fileName = clipName.concat(".ogg");
-        const file = new File([blob], fileName);
-        this.recordingsData.push([clipName, audioURL, file]);
+        
+        this.recordingsData.push([clipName, audioURL, blob]);
       }
 
       mediaRecorder.ondataavailable = (e) => {
@@ -359,15 +361,10 @@ export default {
     changeFileName(index) {
       const existingName = this.recordingsData[index][0];
       const newClipName = prompt('Enter a new name for your sound clip?');
-      var newData = this.recordingsData[index];
-      newData[0] = newClipName
-      console.log(newData)
 
-      if(newClipName === null) {
-        this.recordingsData[index]= newData;
-      } else {
-        this.recordingsData[index] = newData;
-      }
+      if(newClipName !== null && newClipName.trim().length > 0) {
+        this.recordingsData[index][0] = newClipName;
+      } 
     },
 
     visualize(stream) {

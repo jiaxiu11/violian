@@ -20,13 +20,13 @@
 import EvaluationLineGraph from "./EvaluationLineGraph";
 import CourseService from "../services/CourseService";
 import RecordingService from "../services/RecordingService";
-import ScoreAndFeedback from "@/components/Course/ScoreAndFeedback"
+import ScoreAndFeedback from "@/components/Course/ScoreAndFeedback";
 
 export default {
   name: "NewFeedback",
   components: {
     EvaluationLineGraph,
-    'score-feedback': ScoreAndFeedback
+    "score-feedback": ScoreAndFeedback
   },
   methods: {
     onLineGraphScroll() {
@@ -62,41 +62,43 @@ export default {
       )).data.recording;
       this.recording = newRecording;
     },
-    clickedNoteOnset () {
-      if (this.selectedRowNum !== null && this.selectedIndex !== null) 
-        return this.notesByRow[this.selectedRowNum-1][this.selectedIndex].onset
-      else
-        return null
+    clickedNoteOnset() {
+      if (this.selectedRowNum !== null && this.selectedIndex !== null)
+        return this.notesByRow[this.selectedRowNum - 1][this.selectedIndex]
+          .onset;
+      else return null;
     },
 
     splitTranscriptionIntoRows(notes) {
-      let timePerRow = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
+      let timePerRow =
+        (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
 
       let newRowStartTime = 0;
       let rows = [];
       rows.push([]);
       for (let i = 0; i < notes.length; i++) {
-          let note = notes[i];
-          if (note.onset < newRowStartTime + timePerRow) {
-              if (note.onset + note.duration <= newRowStartTime + timePerRow) {
-                  rows[rows.length - 1].push(note);
-              } else {
-                  // split a note that lasts across two rows into two notes
-                  let noteCopy = { ...note };
-                  noteCopy.onset = newRowStartTime + timePerRow;
-                  noteCopy.duration = note.onset + note.duration - (newRowStartTime + timePerRow);
-                  note.duration = note.duration - noteCopy.duration;
-                  rows[rows.length - 1].push(note);
-                  notes[i] = noteCopy;
-                  newRowStartTime = newRowStartTime + timePerRow;
-                  rows.push([]);
-                  i--;
-              }
+        let note = notes[i];
+        if (note.onset < newRowStartTime + timePerRow) {
+          if (note.onset + note.duration <= newRowStartTime + timePerRow) {
+            rows[rows.length - 1].push(note);
           } else {
-              newRowStartTime = newRowStartTime + timePerRow;
-              rows.push([]);
-              i--;
+            // split a note that lasts across two rows into two notes
+            let noteCopy = { ...note };
+            noteCopy.onset = newRowStartTime + timePerRow;
+            noteCopy.duration =
+              note.onset + note.duration - (newRowStartTime + timePerRow);
+            note.duration = note.duration - noteCopy.duration;
+            rows[rows.length - 1].push(note);
+            notes[i] = noteCopy;
+            newRowStartTime = newRowStartTime + timePerRow;
+            rows.push([]);
+            i--;
           }
+        } else {
+          newRowStartTime = newRowStartTime + timePerRow;
+          rows.push([]);
+          i--;
+        }
       }
       return rows;
     }
@@ -118,20 +120,25 @@ export default {
     };
   },
   created: async function() {
-    let response = await CourseService.show(this.$route.params.course_id)
-    this.course = response.data.course
-    this.lesson = this.course.lessons.find(lesson => lesson.id == this.$route.params.lesson_id)
-    
-    this.videoSrc = this.lesson.exercises[0].videoUrl
-    this.currEx = this.lesson.exercises[0]
+    let response = await CourseService.show(this.$route.params.course_id);
+    this.course = response.data.course;
+    this.lesson = this.course.lessons.find(
+      lesson => lesson.id == this.$route.params.lesson_id
+    );
 
-    let recordings = (await RecordingService.list(this.currEx.id)).data.recordings
-      this.recording = recordings.find(recording => recording.id == this.$route.params.recording_id)
+    this.videoSrc = this.lesson.exercises[0].videoUrl;
+    this.currEx = this.lesson.exercises[0];
 
-      if(this.recording != null) {
-          this.transcribedNotes = JSON.parse(this.recording.transcription)
-          this.notesByRow = this.splitTranscriptionIntoRows(this.transcribedNotes)
-      }
+    let recordings = (await RecordingService.list(this.currEx.id)).data
+      .recordings;
+    this.recording = recordings.find(
+      recording => recording.id == this.$route.params.recording_id
+    );
+
+    if (this.recording != null) {
+      this.transcribedNotes = JSON.parse(this.recording.transcription);
+      this.notesByRow = this.splitTranscriptionIntoRows(this.transcribedNotes);
+    }
   }
 };
 </script>
