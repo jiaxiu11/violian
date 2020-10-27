@@ -42,7 +42,9 @@
   - DELETE `/recording/del?rid=` - `{ data: ok }`
   - GET `/recording/get-notes?rid=` - `{ recording: [<recordingObj>] }`
   - POST `/recording/update-notes?rid= { transcription }` - `{ recording: [<recordingObj>] }`
-  - POST `/recording/mark?rid=` - `{ recording: [<recordingObj>] }`
+  - POST `/recording/mark-commented?rid=` - `{ recording: [<recordingObj>] }`
+  - POST `/recording/mark-read?rid=` - `{ recording: [<recordingObj>] }`
+  - GET `/recording/get-uncommented-recordings` - `{ recordings: [{ recording_id, updated_at, exercise_id, lesson_id, course_id, course_name, student_name, tutor_name }]}`
   - GET `/recording/get-unread-comments` - `{ recordings: [{ recording_id, updated_at, exercise_id, lesson_id, course_id, course_name, student_name, tutor_name }]}`
 
 ## subscriptions for student and course
