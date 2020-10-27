@@ -97,16 +97,15 @@ export default {
 
     redirect(item) {
       if (this.isTutor) {
-        window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`;
+        this.$router.push(`/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`);
       } else {
-        window.location.href = `/feedback/show/${item.course_id}/lesson/${item.lesson_id}`;
+        this.$router.push(`/feedback/show/${item.course_id}/lesson/${item.lesson_id}`);
         RecordingService.markAsRead(item.recording_id)
       }
     },
 
-    truncateString(s) {
-      let str = s.substring(0, 45);
-      return str.concat("...");
+    truncateString(str) {
+      return str.length > 45 ? str.substring(0, 45).concat("...") : str
     }
   },
   async created() {
