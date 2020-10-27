@@ -84,7 +84,7 @@ export default {
       requiredRules: [
         v => !!v || "This field is required"
       ],
-      coverPhoto
+      coverPhoto: null
     }
   },
 
@@ -119,6 +119,7 @@ export default {
           courseFormData.set('TutorId', this.user.id)
           courseFormData.set('publishNow', this.publishNow)
           courseFormData.set('price', 0.0)
+          courseFormData.append('coverPhoto', this.coverPhoto)
 
           let courseResponse = await CourseService.create(courseFormData)
 

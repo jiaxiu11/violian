@@ -83,7 +83,7 @@
               v-row(justify="center")
                 v-col(cols="12")
                   v-file-input.pr-3(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense accept="audio/*")
-                  v-btn(color="#ec5252" dark @click="submitAudio" style="margin-top: 2px;") Submit
+                  v-btn(color="#ec5252" dark @click="submitAudio" style="margin-top: 2px;" :loading="loading") Submit
 
 </template>
 
@@ -134,6 +134,7 @@ export default {
       videoSrc: '',
       modal: false,
       newAudio: null,
+      loading: false
     }
   },
   watch: {
@@ -180,11 +181,17 @@ export default {
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
         formData.append('audio', this.newAudio)
-        let recording = (await RecordingService.create(formData)).data.recording
-        let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
-
-        alert('Success!')
-        this.$router.push(`/course/show/${this.courseId}/lesson/${this.lessonId}`)
+        this.loading = true
+        try {
+          let recording = (await RecordingService.create(formData)).data.recording
+          let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
+          alert('Success!')
+        } catch (e) {
+          console.log(e)
+        } finally {
+          this.loading = false
+          this.modal = false
+        }
       } else {
         alert('Please input an audio file to gain feedback')
       }
