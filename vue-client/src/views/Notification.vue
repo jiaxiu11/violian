@@ -27,8 +27,8 @@
                   <label class="comment" @click="redirect(item)"  v-text="getMessage(item)"></label>
                 </v-col>
                 <v-col cols="3">
-                  <v-chip style="margin-right:0.5rem; margin-bottom:2rem;"
-                    class="ma-2"
+                  <v-chip
+                    class="ma-2 time"
                     color="#fffcbd"
                     label
                   >{{getTime(item)}}
@@ -87,9 +87,9 @@ export default {
 
     getMessage(item) {
       if (this.isTutor) {
-        return (`${item.course_name} has a new submission from ${item.student_name}`);
+        return this.truncateString(`${item.course_name} has a new submission from ${item.student_name}`);
       } else {
-        return (`${item.course_name} has new comments from ${item.tutor_name}`);
+        return this.truncateString(`${item.course_name} has new comments from ${item.tutor_name}`);
       }
     },
 
@@ -100,14 +100,18 @@ export default {
         window.location.href = `/feedback/show/${item.course_id}/lesson/${item.lesson_id}`;
       }
       RecordingService.markAsRead(item.recording_id)
-    }
+    },
+
+    truncateString(s) {
+      let str = s.substring(0, 45);
+      return str.concat("...");
+    },
   },
   async created() {
-    this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
-    this.recordings.sort((x, y) => y.updated_at < x.updated_at);
-
     this.isTutor = store.state.user.isTutor;
-    console.log(this.recordings)
+
+    // this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
+    // console.log(this.recordings)
     // console.log(store.state.user)
   }
     
@@ -116,9 +120,18 @@ export default {
 
 <style scoped>
 
-
-.comment {
-  font-weight: bold;
+.time {
+  position: relative;
+  left: 30px;
 }
+
+
+
+.comment { 
+  font-weight: bold;
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+} 
 
 </style>
