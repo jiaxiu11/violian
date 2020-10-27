@@ -27,8 +27,8 @@
                   <label class="comment" @click="redirect(item)"  v-text="getMessage(item)"></label>
                 </v-col>
                 <v-col cols="3">
-                  <v-chip style="margin-right:0.5rem; margin-bottom:2rem;"
-                    class="ma-2"
+                  <v-chip
+                    class="ma-2 time"
                     color="#fffcbd"
                     label
                   >{{getTime(item)}}
@@ -49,6 +49,7 @@
 <script>
 import store from "../store/store"
 import RecordingService from "@/services/RecordingService"
+import moment from 'moment'
 
 export default {
   data() {
@@ -81,44 +82,59 @@ export default {
 
   methods: {
     getTime(item) {
-      let time = item.updated_at.substring(0, item.updated_at.indexOf(':') + 3);
+      const localTime = new Date(item.updated_at).toLocaleString("en-US", {timeZone: "Asia/Singapore"});
+      const time = moment(localTime).calendar()
       return time;
     },
 
     getMessage(item) {
       if (this.isTutor) {
-        return (`${item.course_name} has a new submission from ${item.student_name}`);
+        return this.truncateString(`${item.course_name} has a new submission from ${item.student_name}`);
       } else {
-        return (`${item.course_name} has new comments from ${item.tutor_name}`);
+        return this.truncateString(`${item.course_name} has new comments from ${item.tutor_name}`);
       }
     },
 
     redirect(item) {
       if (this.isTutor) {
-        window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`;
+        window.location.href = (`/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`);
       } else {
-        window.location.href = `/feedback/show/${item.course_id}/lesson/${item.lesson_id}`;
+        window.location.href = (`/feedback/show/${item.course_id}/lesson/${item.lesson_id}`);
+        RecordingService.markAsRead(item.recording_id)
       }
-      RecordingService.markAsRead(item.recording_id)
+    },
+
+    truncateString(str) {
+      return str.length > 45 ? str.substring(0, 45).concat("...") : str
     }
   },
   async created() {
-    this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
-    this.recordings.sort((x, y) => y.updated_at < x.updated_at);
-
     this.isTutor = store.state.user.isTutor;
-    console.log(this.recordings)
-    // console.log(store.state.user)
+    if (this.isTutor) {
+      this.recordings = (await RecordingService.getUncommentedRecordings()).data.recordings;
+
+    } else {
+      this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
+    }
+    console.log(this.recordings);
   }
-    
   }
 </script>
 
 <style scoped>
 
-
-.comment {
-  font-weight: bold;
+.time {
+  position: relative;
+  left: 30px;
 }
+
+
+
+.comment { 
+  font-weight: bold;
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+} 
 
 </style>
