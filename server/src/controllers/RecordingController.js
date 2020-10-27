@@ -257,7 +257,6 @@ module.exports = {
           });
         }
         recording.transcription = transcription;
-        recording.isRead = 0;
 
         await Recording.update(recording.dataValues, {
           where: {
@@ -275,6 +274,43 @@ module.exports = {
       console.log(err);
       res.status(500).send({
         error: "An error has occured in trying to get transcribed notes",
+      });
+    }
+  },
+
+  async markAsCommented(req, res) {
+    try {
+      await sequelize.transaction(async (t) => {
+        const { rid } = req.query;
+        const recording = await Recording.findOne({
+          where: {
+            id: rid,
+          },
+        });
+
+        if (!recording) {
+          return res.status(403).send({
+            error: "Recording information is incorrect",
+          });
+        }
+        recording.isCommented = 1;
+
+        await Recording.update(recording.dataValues, {
+          where: {
+            id: rid,
+          },
+          transaction: t,
+        });
+
+        await recording.reload().dataValues;
+        res.send({
+          recording: recording.toJSON(),
+        });
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(500).send({
+        error: "An error has occured in trying to mark comment as read",
       });
     }
   },
@@ -316,12 +352,72 @@ module.exports = {
     }
   },
 
+  async getUncommentedRecordings(req, res) {
+    try {
+      const user = req.user;
+      const recordings = await Recording.findAll({
+        where: {
+          isCommented: 0,
+          '$exercise.lesson.course.tutor.id$': user.id,
+        },
+        raw: true,
+        attributes: [
+          ['id', 'recording_id'],
+          ['updatedAt', 'updated_at'],
+          [sequelize.col('exercise.id'), 'exercise_id'],
+          [sequelize.col('exercise.lesson.id'), 'lesson_id'],
+          [sequelize.col('exercise.lesson.course.id'), 'course_id'],
+          [sequelize.col('exercise.lesson.course.name'), 'course_name'],
+          [sequelize.col('user.username'), 'student_name'],
+          [sequelize.col('exercise.lesson.course.tutor.username'), 'tutor_name'],
+        ],
+        order: [
+          ['updatedAt','DESC'],
+        ],
+        include: [
+          {
+            model: Exercise,
+            attributes: [],
+            include: [{
+              model: Lesson,
+              attributes: [],
+              include: [{
+                model: Course,
+                attributes: [],
+                include: [{
+                  model: User,
+                  as: 'Tutor',
+                  attributes: [],
+                }]
+              }]
+            }]
+          },
+          {
+            model: User,
+            attributes: [],
+          }
+        ]
+      });
+
+      console.log(recordings);
+      res.send({
+        recordings: recordings,
+      })
+    } catch (err) {
+      console.log(err);
+      res.status(500).send({
+        error: "An error has occured in trying to get uncommented recordings",
+      });
+    }
+  },
+
   async getUnreadComments(req, res) {
     try {
       const user = req.user;
       const recordings = await Recording.findAll({
         where: {
           UserId: user.id,
+          isCommented: 1,
           isRead: 0,
         },
         raw: true,
@@ -370,7 +466,7 @@ module.exports = {
     } catch (err) {
       console.log(err);
       res.status(500).send({
-        error: "An error has occured in trying to get unread feedbacks",
+        error: "An error has occured in trying to get unread comments",
       });
     }
   }
