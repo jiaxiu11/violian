@@ -104,7 +104,9 @@ module.exports = (app) => {
     app.delete("/recording/del", isAuthenticated, RecordingController.destroy),
     app.get("/recording/get-notes", isAuthenticated, RecordingController.getTranscribedNotes),
     app.post("/recording/update-notes", isAuthenticated, RecordingController.updateTranscribedNotes),
-    app.post("/recording/mark", isAuthenticated, RecordingController.markAsRead),
+    app.post("/recording/mark-commented", isAuthenticated, RecordingController.markAsCommented),
+    app.post("/recording/mark-read", isAuthenticated, RecordingController.markAsRead),
+    app.get("/recording/get-uncommented-recordings", isAuthenticated, RecordingController.getUncommentedRecordings),
     app.get("/recording/get-unread-comments", isAuthenticated, RecordingController.getUnreadComments),
     
     // subscription management
