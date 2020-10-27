@@ -12,18 +12,16 @@ v-container
         v-card-text.px-10
           v-form(:ref="`lessonForm`")
             v-row
-              v-col.pb-0(cols="12" md="4")
+              v-col.pb-0(cols="12" md="6")
                 v-text-field(dense label='Name' name='name' type='text' v-model='newLesson.name' :rules="requiredRules" outlined color="indigo" ) Title*
-              v-col.pb-0(cols="12" md="4")
-                v-text-field(dense label='Duration in minutes' name='duration' v-model='newLesson.duration' :rules="durationRules" outlined color="indigo")
             v-row
               v-col.pb-0(cols="12")
                 v-textarea(dense label="Description" auto-grow v-model='newLesson.description' color="indigo" outlined)
-                            
+          v-divider
           v-row
             v-col(cols="12")         
                 div(v-for="(exercise, exerciseIdx) in newLesson.exercises" @click="" :key='exerciseIdx' )
-                  div.text-h5 Video Content
+                  div.text-h5 Video
                     v-form(:ref="`exerciseForm-${exerciseIdx}`")
                       v-row
                         v-col(cols="12" md="6")
@@ -43,36 +41,49 @@ v-container
                             accept="image/*" 
                             :placeholder="exercise.videoPosterFilename ? exercise.videoPosterFilename : 'Choose coverpage for video'" 
                             prepend-icon="mdi-image" 
-                            label="Explanation Video Poster"
+                            label="Explanation Video Poster (Optional)"
                             v-model="exercise.videoPoster"
+                          @change="onVideoPosterInput"
                             outlined
                             color="indigo"
                             dense
                             hide-details)
-
+                      v-row(v-if="exercise.video" style="width: 100%;" :key="componentKey")
+                        video.vjs-big-play-centered(
+                            ref="videoPlayer"
+                            class="video-js"
+                            :id="`video`"
+                            controls
+                            :poster="getFileUrl(exercise.videoPoster)"
+                            data-setup='{"fluid": true, "aspectRatio": "16:9"}'
+                        )
+                            source(:src="getFileUrl(exercise.video)" type="video/mp4")
+                      v-divider.mt-3
+                      div.text-h5.mt-6 Score
                       v-row
                         v-col(cols="12" md="6")
                           v-switch.ma-0(v-model="exercise.useScore" :label="`Overlay score on your video`" color="indigo" dense hide-details)
+                        v-col.py-0(cols="12" md="6" v-if="exercise.useScore")
+                            v-text-field(label='Demo Start Time' v-model='exercise.demoStartTime' color="indigo" prepend-icon="mdi-alarm" persistent-hint hint="At roughly which second did you start playing in demo video" :rules="demoStartTimeRules")
+                      div.text-h6.mt-3 Input score
                       v-row  
                         v-col.py-0(cols="12" md="6" v-if="exercise.useScore")
                           v-radio-group(v-model="exercise.useXml" :mandatory="true" @change="showVex($event, exerciseIdx)")
                             v-radio(label="Upload musicXML file" :value="true" color="indigo")
                             v-radio(label="Design your own score" :value="false" color="indigo")
-                        v-col.py-0(cols="12" md="6" v-if="exercise.useScore")
-                          v-text-field(label='Demo Start Time' v-model='exercise.demoStartTime' color="indigo" prepend-icon="mdi-alarm" persistent-hint hint="At roughly which second did you start playing in demo video" :rules="demoStartTimeRules")
+
                     
                       div(v-show="!exercise.useXml && exercise.useScore")
                         v-row
-                          v-col.pa-0(:id="`pannel-content-${exerciseIdx}`" @click="changeMelody($event, exerciseIdx)")
-                        v-row
+                          v-col(cols="12" md="6")
+                            v-text-field(dense label='BPM for this score' name='bpm' v-model='exercise.bpm' outlined color="indigo")
+                          v-col(cols="12" md="6")
+                            v-select(dense :items="time_signatures" outlined v-model="exercise.timeSignature" label='Time Signature' @change="changeTimeSignature($event, exerciseIdx)" color="indigo")
                           v-col.pt-0(cols="12" md="6")
                             div.pl-0 No. Bars:   {{ exercise.numberOfBars }}
                             v-slider(v-model='exercise.numberOfBars' min='0' max='16' thumb-label :thumb-size="24" @change="changeBars($event, exerciseIdx)" color="indigo" track-color="indigo lighten-3" hide-details)
-                          v-col.pt-0(cols="12" md="6")
-                            div.pl-0 BPM for this score:   {{ exercise.bpm }}
-                            v-slider(v-model='exercise.bpm' min='60' max='120' thumb-label :thumb-size="24" color="indigo" track-color="indigo lighten-3" hide-details)
-                          v-col(cols="12" md="6")
-                            v-select(dense :items="time_signatures" outlined v-model="exercise.timeSignature" label='Time Signature' @change="changeTimeSignature($event, exerciseIdx)" color="indigo")
+                        v-row
+                          v-col.pa-0(:id="`pannel-content-${exerciseIdx}`" @click="changeMelody($event, exerciseIdx)")
                       div(v-show="exercise.useXml && exercise.useScore")
                         v-row
                           v-col(cols="12" md="6")
@@ -84,9 +95,8 @@ v-container
                               v-model="exercise.musicXml"
                               outlined
                               dense)
-                          v-col.pt-0(cols="12" md="6")
-                            div.pl-0 BPM for this score:   {{ exercise.bpm }}
-                            v-slider(v-model='exercise.bpm' min='60' max='120' thumb-label :thumb-size="24" color="indigo" track-color="indigo lighten-3" hide-details)
+                          v-col(cols="12" md="6")
+                            v-text-field(dense label='BPM for this score' name='bpm' v-model='exercise.bpm' outlined color="indigo")
 
   v-row.justify-center
     v-col.text-center
@@ -108,6 +118,7 @@ export default {
   name: 'LessonForm',
   data () {
     return {
+        componentKey:1,
       newLesson: {
         name: '',
         duration: '',
@@ -181,6 +192,19 @@ export default {
   // },
 
   methods: {
+      onVideoPosterInput() {
+          this.componentKey += 1
+      },
+      getFileUrl(file) {
+          if(!file) {
+              return null
+          }
+          if (typeof file === 'string') {
+              return file
+          }
+          let url = window.URL.createObjectURL(file)
+          return url
+      },
     showFile () {
       this.fileDialog = true
     },
@@ -468,5 +492,11 @@ export default {
 <style scoped>
 .file-name {
   flex-grow: 3;
+}
+.video-js {
+    position: relative !important;
+    width: 60% !important;
+    height: auto !important;
+    margin:0px auto;
 }
 </style>
