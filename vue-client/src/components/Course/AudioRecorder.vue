@@ -37,6 +37,13 @@
             </v-icon>
             <strong>= {{ currEx.bpm }}</strong>
           </v-chip>
+          <!-- <v-chip style="position:absolute; bottom:0; left:calc(70%);">
+            <v-icon left>
+              mdi-music-note-eighth
+            </v-icon>
+            <strong>=</strong>
+            <input type="text" name="fname" v-model="bpm" @keyup.enter="alert('enter pressed')">
+          </v-chip> -->
         </div>
 
         <v-divider class="my-4" v-show="showSubmit"></v-divider>
@@ -98,13 +105,18 @@
     </section>
     <v-divider v-show="showSubmit"></v-divider> -->
 
-    <v-row justify="center">
-      <v-btn class="submit" v-show="showSubmit" @click="submitAudio"
-      :disabled="dialog" :loading="dialog">Upload</v-btn>
-      <v-alert class="submitError"
-        type="error"
-        v-show="submissionError"
-      >An error has occurred</v-alert>
+    <v-row v-show="showSubmit">
+      <v-col cols="12" class="text-center">
+        <v-btn color="indigo" dark @click="submitAudio" :disabled="dialog" :loading="dialog"> Upload
+          <v-icon right dark> 
+            mdi-cloud-upload
+          </v-icon>
+        </v-btn>
+        <v-alert class="submitError"
+          type="error"
+          v-show="submissionError"
+        >An error has occurred</v-alert>
+      </v-col>
     </v-row>
 
     <!-- <div class="text-center">
@@ -178,8 +190,8 @@ export default {
       start: false,
       totalTime: 0,
 
-
       settings: [],
+      bpm:0
     }
   },
   watch: {
@@ -488,10 +500,6 @@ canvas {
   margin: 1.5rem;
 }
 
-button.submit {
-  margin: 2rem;
-}
-
 button.delete {
   margin-top: 0.5rem;
   margin-left: 2rem;
@@ -511,6 +519,17 @@ button.delete {
 
 audio:focus {
   outline:0;
+}
+
+input[type=text] {
+  border-bottom: 1px solid black;
+  width:50px;
+  padding-left: 12px;
+  margin: 0 8px;
+}
+
+input[type=text]:focus {
+  outline: 0;
 }
 
 </style>
