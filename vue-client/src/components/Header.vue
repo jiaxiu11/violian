@@ -17,7 +17,9 @@
         v-btn(depressed to="/course/index" color="white") My Courses
         //- v-btn(depressed to="/courses/threads/index" style="position: relative;" color="white") Notifications
         //-   #notification {{ notifications }}
-        v-btn(depressed to="/notifications" color="white") Notifications
+        v-btn(depressed to="/notifications" color="white" v-if="is_student") Notifications
+          #notification {{ notificationsCount }}
+        v-btn(depressed to="/notifications" color="white" v-if="!is_student") Submissions
           #notification {{ notificationsCount }}
         v-btn(depressed @click="logout" color="white") Log Out
 
@@ -86,6 +88,14 @@ export default {
         case 'lg': return false
         case 'xl': return false
         default: return true
+      }
+    },
+
+    is_student () {
+      if (this.user) {
+        return this.user.isStudent
+      } else {
+        return null
       }
     },
 

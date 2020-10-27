@@ -35,7 +35,7 @@
             v-card-text.text-left.text--primary.pb-0
               div {{ course.tagline }}
             v-card-actions
-              v-btn(color='indigo' text @click="go_to_course($event, course.id)")
+              v-btn(color='indigo' text @click="go_to_course($event, course.id, course.lessons[0].id)")
                 | Continue Learning
 
       v-row.mt-10(v-if="!is_student && tutorCourses.length > 0")
@@ -50,9 +50,9 @@
             v-card-text.text-left.text--primary.pb-0
               div {{ course.tagline }}
             v-card-actions
-              v-btn(color='indigo' text @click="go_to_course($event, course.id)")
+              v-btn(color='indigo' text @click="go_to_course_edit($event, course.id)")
                 | Edit
-              v-btn(color='indigo' text @click="go_to_course($event, course.id)")
+              v-btn(color='indigo' text @click="go_to_course($event, course.id, course.lessons[0].id)")
                 | View
 
       v-row.mt-10
@@ -143,13 +143,17 @@ export default {
   },
 
   methods: {
-    go_to_course (event, id) {
-      this.$router.push({
-        name: `showcourse`,
-        params: {
-          course_id: id
-        }
-      })
+    go_to_course (event, id, lesson_id) {
+      if (lesson_id != undefined) {
+        this.$router.push(`/course/show/${id}/lesson/${lesson_id}`)
+      } else {
+        this.$router.push({
+          name: `showcourse`,
+          params: {
+            course_id: id
+          }
+        })
+      }
     },
 
     go_to_course_edit (event, id) {

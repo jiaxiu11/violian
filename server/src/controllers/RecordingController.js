@@ -133,6 +133,7 @@ module.exports = {
   async list(req, res) {
     try {
       const { eid } = req.query;
+      const user = req.user;
       const exercise = await Exercise.findOne({
         where: {
           id: eid,
@@ -155,7 +156,8 @@ module.exports = {
 
       const recordingsJson = [];
       recordings.forEach((recording) => {
-        recordingsJson.push(recording.toJSON());
+        if (recording.UserId == user.id || !user.isStudent)
+          recordingsJson.push(recording.toJSON());
       });
       res.send({
         recordings: recordingsJson,

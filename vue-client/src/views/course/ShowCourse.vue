@@ -46,7 +46,7 @@
         v-col.my-auto(cols="12" md="4" v-if="isSubscribed || isOwned")
           v-row
             v-col.text-center
-              v-btn(color="#26A69A" dark style="width:90%" x-large @click="goToLesson($event, course.lessons[0])") Start Learning!
+              v-btn(color="#26A69A" dark style="width:90%" x-large @click="goToLesson($event, course.lessons[0])") Continue Learning!
 
     v-container(fluid v-if="course.learningPoints")
       v-row.px-sm-16.mx-md-8.mx-lg-16
