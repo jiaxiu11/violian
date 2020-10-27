@@ -98,13 +98,18 @@
     </section>
     <v-divider v-show="showSubmit"></v-divider> -->
 
-    <v-row justify="center">
-      <v-btn class="submit" v-show="showSubmit" @click="submitAudio"
-      :disabled="dialog" :loading="dialog">Upload</v-btn>
-      <v-alert class="submitError"
-        type="error"
-        v-show="submissionError"
-      >An error has occurred</v-alert>
+    <v-row v-show="showSubmit">
+      <v-col cols="12" class="text-center">
+        <v-btn color="indigo" dark @click="submitAudio" :disabled="dialog" :loading="dialog"> Upload
+          <v-icon right dark> 
+            mdi-cloud-upload
+          </v-icon>
+        </v-btn>
+        <v-alert class="submitError"
+          type="error"
+          v-show="submissionError"
+        >An error has occurred</v-alert>
+      </v-col>
     </v-row>
 
     <!-- <div class="text-center">
@@ -486,10 +491,6 @@ canvas {
 
 .submitError {
   margin: 1.5rem;
-}
-
-button.submit {
-  margin: 2rem;
 }
 
 button.delete {

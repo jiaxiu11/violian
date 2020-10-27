@@ -116,6 +116,7 @@ export default {
           courseFormData.set('instrument', this.instrument)
           courseFormData.set('TutorId', this.user.id)
           courseFormData.set('publishNow', this.publishNow)
+          courseFormData.set('price', 0.0)
 
           let courseResponse = await CourseService.create(courseFormData)
 
