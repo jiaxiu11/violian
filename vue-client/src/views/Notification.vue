@@ -95,7 +95,7 @@ export default {
 
     redirect(item) {
       if (this.isTutor) {
-        window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}`;
+        window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`;
       } else {
         window.location.href = `/feedback/show/${item.course_id}/lesson/${item.lesson_id}`;
       }

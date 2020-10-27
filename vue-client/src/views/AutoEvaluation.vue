@@ -125,13 +125,12 @@ export default {
     this.currEx = this.lesson.exercises[0]
 
     let recordings = (await RecordingService.list(this.currEx.id)).data.recordings
+      this.recording = recordings.find(recording => recording.id == this.$route.params.recording_id)
 
-    if (recordings.length > 0) {
-      this.recording = recordings[recordings.length - 1]
-    }
-
-    this.transcribedNotes = JSON.parse(recordings[recordings.length - 1].transcription)
-    this.notesByRow = this.splitTranscriptionIntoRows(this.transcribedNotes)
+      if(this.recording != null) {
+          this.transcribedNotes = JSON.parse(this.recording.transcription)
+          this.notesByRow = this.splitTranscriptionIntoRows(this.transcribedNotes)
+      }
   }
 };
 </script>
