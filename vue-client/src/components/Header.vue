@@ -18,7 +18,7 @@
         //- v-btn(depressed to="/courses/threads/index" style="position: relative;" color="white") Notifications
         //-   #notification {{ notifications }}
         v-btn(depressed to="/notifications" color="white") Notifications
-          #notification {{ notifications }}
+          #notification {{ notificationsCount }}
         v-btn(depressed @click="logout" color="white") Log Out
 
       v-app-bar-nav-icon(@click="drawer = true" v-if="minimiseNav")
@@ -57,13 +57,15 @@
 
 <script>
 import {mapState} from 'vuex'
+// import RecordingService from "@/services/RecordingService"
 
 export default {
   name: 'Header',
   data () {
     return {
       drawer: false,
-      messages: 0
+      messages: 0,
+      notificationsCount: 0
     }
   },
 
@@ -91,6 +93,7 @@ export default {
   },
 
   mounted: function () {
+
   }
 }
 </script>

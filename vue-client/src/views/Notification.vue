@@ -49,6 +49,7 @@
 <script>
 import store from "../store/store"
 import RecordingService from "@/services/RecordingService"
+import moment from 'moment'
 
 export default {
   data() {
@@ -81,7 +82,8 @@ export default {
 
   methods: {
     getTime(item) {
-      let time = item.updated_at.substring(0, item.updated_at.indexOf(':') + 3);
+      const localTime = new Date(item.updated_at).toLocaleString("en-US", {timeZone: "Asia/Singapore"});
+      const time = moment(localTime).calendar()
       return time;
     },
 
@@ -98,23 +100,25 @@ export default {
         window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`;
       } else {
         window.location.href = `/feedback/show/${item.course_id}/lesson/${item.lesson_id}`;
+        RecordingService.markAsRead(item.recording_id)
       }
-      RecordingService.markAsRead(item.recording_id)
     },
 
     truncateString(s) {
       let str = s.substring(0, 45);
       return str.concat("...");
-    },
+    }
   },
   async created() {
     this.isTutor = store.state.user.isTutor;
+    if (this.isTutor) {
+      this.recordings = (await RecordingService.getUncommentedRecordings()).data.recordings;
 
-    // this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
-    // console.log(this.recordings)
-    // console.log(store.state.user)
+    } else {
+      this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
+    }
+    console.log(this.recordings);
   }
-    
   }
 </script>
 
