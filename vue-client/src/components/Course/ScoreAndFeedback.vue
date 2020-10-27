@@ -11,7 +11,7 @@
             :timeSignature="currEx.timeSignature"
             :barsPerRow="4"
             :onSelectNoteForGreentick="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
-            :onClickNote="onClickNote" 
+            :onClickNote="onClickNote"
             :clickedNoteOnset="clickedNoteOnset"
             :shouldIndicateNoteClicked="shouldIndicateNoteClicked"
           )
@@ -84,8 +84,7 @@ export default {
     "start",
     "isNewFeedback",
     "isShowFeedback",
-    "isNewRecording"
-  ],
+    "isNewRecording"],
   components: {
     'line-graph': EvaluationLineGraph
   },

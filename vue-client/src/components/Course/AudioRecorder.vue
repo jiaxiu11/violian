@@ -107,7 +107,7 @@
 
     <v-row v-show="showSubmit">
       <v-col cols="12" class="text-center">
-        <v-btn color="indigo" dark @click="submitAudio" :disabled="dialog" :loading="dialog"> Upload
+        <v-btn color="indigo" dark @click="submitAudio" :loading="dialog"> Upload
           <v-icon right dark> 
             mdi-cloud-upload
           </v-icon>
@@ -296,7 +296,6 @@ export default {
       try {
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
-        console.log(this.currEx.id, file)
         formData.append('audio', file);
         let recording = (await RecordingService.create(formData)).data.recording
         let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
