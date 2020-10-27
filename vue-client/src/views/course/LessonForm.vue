@@ -29,7 +29,7 @@ v-container
                             accept="video/mp4, video/ogg"
                             :placeholder="exercise.videoFilename ? exercise.videoFilename : 'Choose explanation video'" 
                             prepend-icon="mdi-video" 
-                            label="Explanation Video"
+                            label="Demo Video"
                             v-model="exercise.video"
                             outlined
                             color="indigo"
@@ -41,7 +41,7 @@ v-container
                             accept="image/*" 
                             :placeholder="exercise.videoPosterFilename ? exercise.videoPosterFilename : 'Choose coverpage for video'" 
                             prepend-icon="mdi-image" 
-                            label="Explanation Video Poster (Optional)"
+                            label="Demo Video Poster (Optional)"
                             v-model="exercise.videoPoster"
                           @change="onVideoPosterInput"
                             outlined
@@ -66,13 +66,6 @@ v-container
                         v-col.py-0(cols="12" md="6" v-if="exercise.useScore")
                             v-text-field(label='Demo Start Time' v-model='exercise.demoStartTime' color="indigo" prepend-icon="mdi-alarm" persistent-hint hint="At roughly which second did you start playing in demo video" :rules="demoStartTimeRules")
                       div.text-h6.mt-3 Input score
-                      v-row  
-                        v-col.py-0(cols="12" md="6" v-if="exercise.useScore")
-                          v-radio-group(v-model="exercise.useXml" :mandatory="true" @change="showVex($event, exerciseIdx)")
-                            v-radio(label="Upload musicXML file" :value="true" color="indigo")
-                            v-radio(label="Design your own score" :value="false" color="indigo")
-
-                    
                       div(v-show="!exercise.useXml && exercise.useScore")
                         v-row
                           v-col(cols="12" md="6")
@@ -136,7 +129,7 @@ export default {
           numberOfBars: 4,
           melody: [],
           demoStartTime: "0",
-          useXml: true,
+          useXml: false,
           musicXml: null,
           musicXmlFilename: '',
           handler: null,
@@ -422,7 +415,7 @@ export default {
         numberOfBars: 4,
         melody: [],
         demoStartTime: '',
-        useXml: true,
+        useXml: false,
         musicXml: null,
         musicXmlFilename: '',
         handler: null,
@@ -484,6 +477,9 @@ export default {
           }
         }
       }
+    }
+    for (let idx = 0; idx < this.newLesson.exercises.length; idx++) {
+        await this.showVex(null, idx)
     }
   }
 }

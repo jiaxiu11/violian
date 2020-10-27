@@ -391,6 +391,9 @@ export default {
               i--;
           }
       }
+      while(rows.length < this.scoreRows.length) {
+          rows.push([])
+      }
       return rows;
     }
   },
