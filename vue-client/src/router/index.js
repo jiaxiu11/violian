@@ -43,7 +43,7 @@ const routes = [
     component: LogIn
   },
   {
-    path: '/feedback/new/:course_id/lesson/:lesson_id',
+    path: '/feedback/new/:course_id/lesson/:lesson_id/recording/:recording_id',
     name: 'newfeedback',
     component: AutoEvaluation
   },
