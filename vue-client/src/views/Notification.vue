@@ -97,9 +97,9 @@ export default {
 
     redirect(item) {
       if (this.isTutor) {
-        this.$router.push(`/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`);
+        window.location.href = (`/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`);
       } else {
-        this.$router.push(`/feedback/show/${item.course_id}/lesson/${item.lesson_id}`);
+        window.location.href = (`/feedback/show/${item.course_id}/lesson/${item.lesson_id}`);
         RecordingService.markAsRead(item.recording_id)
       }
     },
