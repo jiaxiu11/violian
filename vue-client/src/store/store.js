@@ -44,7 +44,8 @@ export default new Vuex.Store({
     },
 
     clearOneNotification (state) {
-      state.notifications -= 1;
+      if (state.notifications > 0)
+        state.notifications -= 1;
     }
   },
 
