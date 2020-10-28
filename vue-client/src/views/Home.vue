@@ -58,7 +58,7 @@
       v-row.mt-10
         v-col.text-left(cols="12")
           h2 Popular Courses
-        v-col(v-for="course in popularCourses.slice(0, cardsPerRow)" cols="12" sm="6" md="4" lg="3" :key="course.id")
+        v-col(v-for="course in popularCourses" cols="12" sm="6" md="4" lg="3" :key="course.id")
           v-card.mx-auto
             v-img.white--text.align-end(v-if="course.coverPhotoUrl" height="200px" :src="course.coverPhotoUrl" gradient="to top right, rgba(0,0,0,.5), rgba(0,0,0,.5)")
               v-card-title(style="text-shadow: 1px 1px 2px #000000;") {{ course.name }}

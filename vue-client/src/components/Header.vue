@@ -59,7 +59,7 @@
 
 <script>
 import {mapState} from 'vuex'
-// import RecordingService from "@/services/RecordingService"
+import RecordingService from "@/services/RecordingService"
 
 export default {
   name: 'Header',
@@ -101,8 +101,16 @@ export default {
     ...mapState(['user', 'notifications'])
   },
 
-  mounted: function () {
-
+  mounted: async function () {
+    if (this.user) {
+      if (this.is_student) {
+        let recordings = (await RecordingService.getUnreadComments()).data.recordings;
+        this.$store.dispatch('setNotifications', recordings.length)
+      } else {
+        let recordings = (await RecordingService.getUncommentedRecordings()).data.recordings
+        this.$store.dispatch('setNotifications', recordings.length)
+      }
+    }
   }
 }
 </script>
