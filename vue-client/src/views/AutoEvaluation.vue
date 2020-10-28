@@ -14,6 +14,8 @@
           :clickedNoteOnset="clickedNoteOnset"
           :shouldIndicateNoteClicked="true"
         )
+      v-divider
+      v-btn(@click="publishComments") Publish Comments
 </template>
 
 <script>
@@ -29,6 +31,11 @@ export default {
     "score-feedback": ScoreAndFeedback
   },
   methods: {
+     async publishComments() {
+      const recordingId = this.recording.id;
+      const response = await RecordingService.markAsCommented(recordingId);
+    },
+    
     onLineGraphScroll() {
       clearTimeout(this.scrollTimeout);
 
