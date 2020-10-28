@@ -35,7 +35,6 @@
                   </v-chip>
                 </v-col>
               </v-row>
-              <v-divider></v-divider>
 
             </v-list-item-title>
           </v-list-item-content>
@@ -101,6 +100,7 @@ export default {
       } else {
         window.location.href = (`/feedback/show/${item.course_id}/lesson/${item.lesson_id}`);
         RecordingService.markAsRead(item.recording_id)
+        this.$store.dispatch('clearOneNotification')
       }
     },
 
@@ -112,7 +112,6 @@ export default {
     this.isTutor = store.state.user.isTutor;
     if (this.isTutor) {
       this.recordings = (await RecordingService.getUncommentedRecordings()).data.recordings;
-
     } else {
       this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
     }

@@ -42,6 +42,10 @@ export default new Vuex.Store({
     logOut (state) {
       state.isUserLoggedIn = false;
     },
+
+    clearOneNotification (state) {
+      state.notifications -= 1;
+    }
   },
 
   actions: {
@@ -62,6 +66,10 @@ export default new Vuex.Store({
 
     setNotifications ({commit}, notifications) {
       commit('setNotifications', notifications)
+    },
+
+    clearOneNotification ({commit}) {
+      commit('clearOneNotification')
     },
 
     // subscription management

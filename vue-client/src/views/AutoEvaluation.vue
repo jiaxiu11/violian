@@ -1,5 +1,5 @@
 <template lang="pug">
-  v-card.mx-10.mt-10(class="commentCard")
+  v-card.mx-10.my-10(class="commentCard")
       v-card-title Click on a note in student's recording to leave comment
       v-card-subtitle(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
       v-text-field.mx-10(label="comment" hint="Press enter to save" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
@@ -15,7 +15,7 @@
           :shouldIndicateNoteClicked="true"
         )
       v-divider
-      v-btn(@click="publishComments") Publish Comments
+      v-btn(@click="publishComments" large color="indigo" dark) Publish Comments
 </template>
 
 <script>
@@ -31,9 +31,12 @@ export default {
     "score-feedback": ScoreAndFeedback
   },
   methods: {
-     async publishComments() {
+    async publishComments() {
       const recordingId = this.recording.id;
-      const response = await RecordingService.markAsCommented(recordingId);
+      await RecordingService.markAsCommented(recordingId);
+      this.$store.dispatch('clearOneNotification')
+      alert('Your comment is sent to student!')
+      this.$router.push('/notifications')
     },
     
     onLineGraphScroll() {

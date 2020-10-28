@@ -18,9 +18,9 @@
         //- v-btn(depressed to="/courses/threads/index" style="position: relative;" color="white") Notifications
         //-   #notification {{ notifications }}
         v-btn(depressed to="/notifications" color="white" v-if="is_student") Notifications
-          #notification {{ notificationsCount }}
+          #notification {{ notifications }}
         v-btn(depressed to="/notifications" color="white" v-if="!is_student") Submissions
-          #notification {{ notificationsCount }}
+          #notification {{ notifications }}
         v-btn(depressed @click="logout" color="white") Log Out
 
       v-app-bar-nav-icon(@click="drawer = true" v-if="minimiseNav")
@@ -67,7 +67,6 @@ export default {
     return {
       drawer: false,
       messages: 0,
-      notificationsCount: 0
     }
   },
 
