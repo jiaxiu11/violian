@@ -1,14 +1,25 @@
 <template>
   <v-card
     class="mx-auto"
+    style="margin-top:30px;"
     max-width="700"
+    
+    v-if="notifications==0"
+  ><v-row justify="center">
+      <h1>No {{isTutor?'submissions':'notifications'}} found</h1>
+    </v-row>
+  </v-card>
+  <v-card
+    class="mx-auto"
+    max-width="700"
+    style="margin-top:30px;"
+    v-else
   >
     <v-toolbar
       color="teal"
       dark
     >
       <v-app-bar-nav-icon></v-app-bar-nav-icon>
-
       <v-toolbar-title>Submissions</v-toolbar-title>
 
       <v-spacer></v-spacer>
@@ -62,6 +73,7 @@ export default {
     recordings: [],
     isTutor: null,
     sortedRecordings: [],
+    notifications: 0,
     // recordings2:[
     //   {
     //     recording_id: '1',
@@ -114,6 +126,7 @@ export default {
     
     async created() {
       this.isTutor = store.state.user.isTutor;
+      this.notifications = store.state.notifications;
       if (this.isTutor) {
         this.recordings = (await RecordingService.getUncommentedRecordings()).data.recordings;
       } else {
