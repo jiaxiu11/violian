@@ -1,6 +1,6 @@
 <template lang="pug">
   #courses.mt-5
-    panel(title="All Courses" md="9")
+    panel(v-if="courses.length > 0" title="All Courses" md="9")
       v-list(v-if="!is_student")
         v-list-item(v-for="course in courses" :key="course.id")
           v-list-item-content.clickable-content.mx-2.px-2(@click="showCourse($event, course.id, course.lessons[0].id)" style="")
