@@ -107,7 +107,7 @@
 
     <v-row v-show="showSubmit">
       <v-col cols="12" class="text-center">
-        <v-btn color="indigo" dark @click="submitAudio" :loading="dialog"> Upload
+        <v-btn color="indigo" dark @click="submitAudio" :disabled="dialog" :loading="dialog"> Upload
           <v-icon right dark> 
             mdi-cloud-upload
           </v-icon>
@@ -296,6 +296,7 @@ export default {
       try {
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
+        console.log(this.currEx.id, file)
         formData.append('audio', file);
         let recording = (await RecordingService.create(formData)).data.recording
         let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
@@ -330,11 +331,7 @@ export default {
     },
 
     onSuccess(stream) {
-      // const soundClips = document.querySelector('.sound-clips');
-      // const mainSection = document.querySelector('.main-controls');
-      // console.log(soundClips, mainSection)
       const mediaRecorder = new MediaRecorder(stream);
-      // this.visualize(stream);
 
       this.mediaRecorder = mediaRecorder;
       var chunks = [];
@@ -366,63 +363,6 @@ export default {
         this.recordingsData[index][0] = newClipName;
       } 
     },
-
-    visualize(stream) {
-      const canvas = document.querySelector('.visualizer');
-      const canvasCtx = canvas.getContext("2d");
-
-      if(!this.audioCtx) {
-        this.audioCtx = new AudioContext();
-      }
-
-      const source = this.audioCtx.createMediaStreamSource(stream);
-
-      const analyser = this.audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-
-      source.connect(analyser);
-      draw()
-
-      function draw() {
-        const WIDTH = canvas.width
-        const HEIGHT = canvas.height;
-
-        requestAnimationFrame(draw);
-
-        analyser.getByteTimeDomainData(dataArray);
-
-        canvasCtx.fillStyle = 'rgb(200, 200, 200)';
-        canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
-
-        canvasCtx.lineWidth = 2;
-        canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
-
-        canvasCtx.beginPath();
-
-        let sliceWidth = WIDTH * 1.0 / bufferLength;
-        let x = 0;
-
-
-        for(let i = 0; i < bufferLength; i++) {
-
-          let v = dataArray[i] / 128.0;
-          let y = v * HEIGHT/2;
-
-          if(i === 0) {
-            canvasCtx.moveTo(x, y);
-          } else {
-            canvasCtx.lineTo(x, y);
-          }
-
-          x += sliceWidth;
-        }
-
-        canvasCtx.lineTo(canvas.width, canvas.height/2);
-        canvasCtx.stroke();
-      }
-    }
 
   }
 }

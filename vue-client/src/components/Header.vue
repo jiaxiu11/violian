@@ -14,13 +14,14 @@
         v-btn(depressed to="/register" color="white") Register
         v-btn(depressed to="/login" color="white") Log In
       v-toolbar-items(v-if="$store.state.isUserLoggedIn && !minimiseNav")
+        v-btn(depressed to="/" color="white") Home
         v-btn(depressed to="/course/index" color="white") My Courses
-        //- v-btn(depressed to="/courses/threads/index" style="position: relative;" color="white") Notifications
-        //-   #notification {{ notifications }}
-        v-btn(depressed to="/notifications" color="white" v-if="is_student") Notifications
+        v-btn(depressed to="/notifications" color="white" v-if="is_student && notifications > 0") Notifications
           #notification {{ notifications }}
-        v-btn(depressed to="/notifications" color="white" v-if="!is_student") Submissions
+        v-btn(depressed to="/notifications" color="white" v-else-if="is_student") Notifications
+        v-btn(depressed to="/notifications" color="white" v-else-if="!is_student && notifications > 0") Submissions
           #notification {{ notifications }}
+        v-btn(depressed to="/notifications" color="white" v-else) Submissions
         v-btn(depressed @click="logout" color="white") Log Out
 
       v-app-bar-nav-icon(@click="drawer = true" v-if="minimiseNav")
