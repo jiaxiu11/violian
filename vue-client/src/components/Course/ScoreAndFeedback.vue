@@ -3,7 +3,10 @@
     v-row.justify-center
       v-col.py-0(cols="12")
         div(v-for="(part, idx) in scoreRows" :key="idx")
+          div.font-weight-bold(v-if="isShowFeedback && idx == 0") Tutor's recording
           div(:id="`vexflow-wrapper-${idx}`" style="position:relative")
+          div.font-weight-bold(v-if="isShowFeedback && idx == 0") Your recording
+          div.font-weight-bold(v-if="isNewFeedback && idx == 0") Student's recording
           line-graph(v-if="transcribedNotes.length > 0"
             :transcribedNotes="transcribedNotes[idx]"
             :rowNum="idx + 1"
@@ -16,10 +19,12 @@
             :shouldIndicateNoteClicked="shouldIndicateNoteClicked"
           )
 
-    v-row
-      v-col(v-if="isNewFeedback || isShowFeedback")
-        v-btn(@click="play") Play
-        v-btn(@click="pause") Pause
+    v-btn(@click="play" v-if="!playing && (isNewFeedback || isShowFeedback)" fab large style="position:fixed; top:25vh; right:24px;")
+      v-icon(color="indigo") mdi-play
+    v-btn(@click="pause" v-if="playing && (isNewFeedback || isShowFeedback)" fab large style="position:fixed; top:25vh; right:24px;")
+      v-icon(color="indigo") mdi-pause
+
+    v-row(style="position: -webkit-sticky; /* Safari */position: sticky;top: 0;")
 
       //- this is the rolling tick
       img(
@@ -84,7 +89,9 @@ export default {
     "start",
     "isNewFeedback",
     "isShowFeedback",
-    "isNewRecording"],
+    "isNewRecording",
+    "bpm"
+    ],
   components: {
     'line-graph': EvaluationLineGraph
   },
@@ -122,6 +129,7 @@ export default {
 
       // animation
       animationFrame: null,
+      playing: false
     }
   },
 
@@ -135,6 +143,20 @@ export default {
         this.playTutorAudio()
       } else {
         this.tutorAudioEnd()
+      }
+    },
+
+    tutorFocused: function (val) {
+      this.pauseTutorAudio()
+      this.pauseStudentAudio()
+    },
+
+    bpm: function (val) {
+      if (typeof val == "number") {
+        console.log(val)
+        this.noteOnsetDurations = []
+        for (let i = 0; i < this.scoreRows.length; i++)
+          this.noteOnsetDurations.push(vexUI.notesToOnsetDuration(this.scoreRows[i], this.currEx.timeSignature, val, i))
       }
     }
   },
@@ -190,6 +212,7 @@ export default {
     },
 
     play () {
+      this.playing = true
       if (this.isShowFeedback) {
         if (this.tutorFocused) {
           this.playTutorAudio()
@@ -207,6 +230,42 @@ export default {
       } else {
         this.pauseStudentAudio()
       }
+    },
+
+    recordStart () {
+      // play the audio
+      let animate = () => {
+        let currTime = this.elapsedTime
+        if (currTime > this.demoStartTime) {
+          currTime = currTime - this.demoStartTime
+          let currNoteOnsetDuration = this.noteOnsetDurations[this.activeRow][this.activeNote]
+          if (currTime < currNoteOnsetDuration.onset + currNoteOnsetDuration.duration) {
+            // move within this note
+            let timeFraction = (currTime - currNoteOnsetDuration.onset) / currNoteOnsetDuration.duration;
+            if (this.activeNote == this.scoreRows[this.activeRow].length - 1) {
+              this.transformX = (this.notePositions[this.activeRow][this.activeNote].x + parseFloat((this.canvasWidth - 20 - this.notePositions[this.activeRow][this.activeNote].x) * timeFraction))
+            } else {
+              this.transformX = (this.notePositions[this.activeRow][this.activeNote].x + parseFloat((this.notePositions[this.activeRow][this.activeNote + 1].x - this.notePositions[this.activeRow][this.activeNote].x) * timeFraction))
+            }
+          } else {
+            // move to next note, if needed move to next row
+            // console.log(this.activeRow, this.activeNote)
+            if (this.activeNote == this.scoreRows[this.activeRow].length - 1) {
+              this.activeNote = 0
+              this.activeRow += 1
+              if (this.activeRow < this.notePositions.length)
+                document.getElementById(`vexflow-wrapper-${this.activeRow}`).scrollIntoView(true, {behavior: "smooth"})
+              this.transformY = this.transformY + this.yInterval + 10
+            } else {
+              this.activeNote += 1
+            }
+          }
+        }
+
+        this.animationFrame = requestAnimationFrame(animate);
+      }
+
+      this.animationFrame = requestAnimationFrame(animate);
     },
 
     playTutorAudio () {
@@ -261,6 +320,7 @@ export default {
 
     pauseTutorAudio () {
       this.$refs['tutorAudio'].pause()
+      this.playing = false
       cancelAnimationFrame(this.animationFrame)
 
       for (let i = 0; i < this.handlers.length; i++) {
@@ -269,6 +329,7 @@ export default {
     },
 
     tutorAudioEnd () {
+      this.playing = false
       this.transformX = this.notePositions[0][0].x
       this.transformY = 10
       cancelAnimationFrame(this.animationFrame)
@@ -313,11 +374,14 @@ export default {
     },
 
     pauseStudentAudio () {
+      this.playing = false
+
       this.$refs['studentAudio'].pause()
       cancelAnimationFrame(this.animationFrame)
     },
 
     studentAudioEnd () {
+      this.playing = false
       this.transformXStudent = 30
       this.transformYStudent = 10
       cancelAnimationFrame(this.animationFrame)

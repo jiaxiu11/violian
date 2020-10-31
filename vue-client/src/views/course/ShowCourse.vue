@@ -122,18 +122,18 @@
                       v-icon mdi-unfold-more-horizontal
 
                   v-list
-                    v-list-item(v-for='(lesson, idx) in course.lessons' :key='lesson.id' shaped :disabled="idx != 0" @click="goToLesson($event, lesson)")
-                      v-list-item-icon(v-if="idx == 0")
-                        v-icon(color='#ec5252') mdi-play
-                      v-list-item-icon(v-else)
+                    v-list-item(v-for='(lesson, idx) in course.lessons' :key='lesson.id' shaped :disabled="idx != 0")
+                      //- v-list-item-icon(v-if="idx == 0")
+                      //-   v-icon(color='#ec5252') mdi-play
+                      v-list-item-icon
                         v-icon(color='rgba(0, 0, 0, 0.38)') mdi-play
                       v-list-item-content
                         v-list-item-title(v-text='lesson.name')
                       v-spacer
                       //- v-list-item-icon(v-if="idx == 0")
                       //-   div(to="/") Preview
-                      v-list-item-icon
-                        div {{ lesson.duration }} mins
+                      //- v-list-item-icon
+                      //-   div {{ lesson.duration }} mins
 
     v-row(justify='center')
       v-dialog(v-model='dialog' max-width='calc(100vw * 0.8)' v-if="dialog")
