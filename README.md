@@ -14,7 +14,7 @@
 ## courses
 - course management
   - GET `/course/list?uid=` - `{ courses: [<courseObj>] }`
-  - GET `/course/listall?search=` - `{ courses: [<courseObj>] }`
+  - GET `/course/listall?search=&instrument=` - `{ courses: [<courseObj>] }`
   - GET `/course/show?cid=` - `{ course: <courseObj> } gets detailed course obj including lessons`
   - POST `/course/new { name, price, description, langauge, level, instrument,  TutorId }` - `{ course: <courseObj> }`
   - PUT `/course/edit { courseObj }` - `{ course: <courseObj> }`
