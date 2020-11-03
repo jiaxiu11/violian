@@ -1,8 +1,8 @@
-const {Course} = require('../models')
-const {User} = require('../models')
-const {Sequelize} = require('sequelize')
-const {Op} = require('sequelize')
-const {sequelize} = require('../models')
+const { Course } = require('../models')
+const { User } = require('../models')
+const { Sequelize } = require('sequelize')
+const { Op } = require('sequelize')
+const { sequelize } = require('../models')
 const AWS = require('aws-sdk')
 const config = require('../config/config')
 
@@ -12,18 +12,18 @@ const s3 = new AWS.S3({
 });
 
 module.exports = {
-  async create (req, res) {
+  async create(req, res) {
     try {
       await sequelize.transaction(async (t) => {
         const user = req.user
 
         if (req.files['previewVideo'] && req.files['previewVideo'].length > 0) {
           let params = {
-              Bucket: config.aws.bucket,
-              Key: `${user.email}/${req.body.name}/previewVideo/${req.files['previewVideo'][0].originalname}`,
-              Body: req.files['previewVideo'][0].buffer
+            Bucket: config.aws.bucket,
+            Key: `${user.email}/${req.body.name}/previewVideo/${req.files['previewVideo'][0].originalname}`,
+            Body: req.files['previewVideo'][0].buffer
           }
-      
+
           // Uploading files to the bucket
           const response = await s3.upload(params).promise()
           req.body.previewVideoUrl = response.Location
@@ -31,22 +31,22 @@ module.exports = {
 
         if (req.files['coverPhoto'] && req.files['coverPhoto'].length > 0) {
           let params = {
-              Bucket: config.aws.bucket,
-              Key: `${user.email}/${req.body.name}/coverPhoto/${req.files['coverPhoto'][0].originalname}`,
-              Body: req.files['coverPhoto'][0].buffer
+            Bucket: config.aws.bucket,
+            Key: `${user.email}/${req.body.name}/coverPhoto/${req.files['coverPhoto'][0].originalname}`,
+            Body: req.files['coverPhoto'][0].buffer
           }
-      
+
           // Uploading files to the bucket
           const response = await s3.upload(params).promise()
           req.body.coverPhotoUrl = response.Location
-        } 
-  
+        }
+
         req.body.duration = 0
         const course = await user.createCourse(req.body, {
           transaction: t
         })
         await course.setTutor(user)
-  
+
         res.send({
           course: course.toJSON()
         })
@@ -59,7 +59,7 @@ module.exports = {
     }
   },
 
-  async list (req, res) {
+  async list(req, res) {
     try {
       const uid = req.user.id
       const user = await User.findOne({
@@ -67,7 +67,7 @@ module.exports = {
           id: uid
         }
       })
-      
+
       if (!user || !user.isTutor) {
         return res.status(403).send({
           error: "User information is incorrect"
@@ -108,32 +108,24 @@ module.exports = {
     }
   },
 
-  async listAll (req, res) {
+  async listAll(req, res) {
     try {
       let courses = null
-      if (req.query.search) {
+      if (req.query.search || true) {
         courses = await Course.findAll({
           where: {
-            [Op.or]: [
-              'name', 'instrument'
-            ].map(key => {
-              return {
-                [key] : {
-                  [Op.like]: `%${req.query.search}%`
-                }
-              }
-            }),
-            publishNow: true
+            name: {
+              [Op.like]: `%${req.query.search || ''}%`,
+            },
+            instrument: {
+              [Op.like]: `${req.query.instrument || '%%'}`,
+            },
+            publishNow: true,
           },
+          order: [
+            ['name'],
+          ],
           limit: 12
-        })
-      } else {
-        courses = await Course.findAll({ 
-          order: Sequelize.literal('random()'), 
-          limit: 12,
-          where: {
-            publishNow: true
-          }
         })
       }
 
@@ -142,7 +134,7 @@ module.exports = {
           error: "No course found"
         })
       }
-      
+
       var coursesJson = courses.map(course => {
         return course.toJSON()
       })
@@ -158,11 +150,11 @@ module.exports = {
     }
   },
 
-  async show (req, res) {
+  async show(req, res) {
     try {
-      const {cid} = req.query
+      const { cid } = req.query
       const course = await Course.findOne({
-        where : {
+        where: {
           id: cid
         }
       })
@@ -193,10 +185,10 @@ module.exports = {
     }
   },
 
-  async destroy (req, res) {
+  async destroy(req, res) {
     try {
       await sequelize.transaction(async (t) => {
-        const {cid} = req.query
+        const { cid } = req.query
         await Course.destroy({
           where: {
             id: cid
@@ -204,7 +196,7 @@ module.exports = {
           individualHooks: true,
           transaction: t
         })
-  
+
         res.send({
           data: 'ok'
         })
@@ -216,7 +208,7 @@ module.exports = {
     }
   },
 
-  async edit (req, res) {
+  async edit(req, res) {
     try {
       const user = req.user
       let course = await Course.findOne({
@@ -227,11 +219,11 @@ module.exports = {
 
       let possibleAttr = ['previewVideo', 'coverPhoto']
       let changedAttr = []
-      if (req.files['previewVideo'] && req.files['previewVideo'].length > 0) 
+      if (req.files['previewVideo'] && req.files['previewVideo'].length > 0)
         changedAttr.push(0)
-      if (req.files['coverPhoto'] && req.files['coverPhoto'].length > 0) 
+      if (req.files['coverPhoto'] && req.files['coverPhoto'].length > 0)
         changedAttr.push(1)
-      
+
       for (let i = 0; i < changedAttr.length; i++) {
         let originalKey = null
         if (changedAttr[i] == 0 && course.previewVideoUrl)
@@ -252,7 +244,7 @@ module.exports = {
           Key: `${user.email}/${req.body.name}/${possibleAttr[changedAttr[i]]}/${req.files[`${possibleAttr[changedAttr[i]]}`][0].originalname}`,
           Body: req.files[`${possibleAttr[changedAttr[i]]}`][0].buffer
         }
-    
+
         // Uploading files to the bucket
         const response = await s3.upload(params).promise()
 
@@ -261,7 +253,7 @@ module.exports = {
         if (changedAttr[i] == 1)
           req.body.coverPhotoUrl = response.Location
       }
-      
+
       course = await sequelize.transaction(async (t) => {
         await Course.update(req.body, {
           where: {
@@ -269,7 +261,7 @@ module.exports = {
           },
           transaction: t
         })
-  
+
         return await Course.findOne({
           where: {
             id: req.body.id
