@@ -246,7 +246,7 @@ module.exports = {
     try {
       await sequelize.transaction(async (t) => {
         const { rid } = req.query;
-        const { transcription } = req.body
+        const { transcription, overallComment } = req.body
         const recording = await Recording.findOne({
           where: {
             id: rid,
@@ -259,6 +259,9 @@ module.exports = {
           });
         }
         recording.transcription = transcription;
+        if (overallComment) {
+          recording.overallComment = overallComment;
+        }
 
         await Recording.update(recording.dataValues, {
           where: {

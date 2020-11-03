@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
     audioUrl: DataTypes.STRING,
     audioFilename: DataTypes.STRING,
     transcription: DataTypes.STRING,
+    overallComment: DataTypes.STRING,
     isCommented: {
       type: DataTypes.BOOLEAN,
       defaultValue: 0
