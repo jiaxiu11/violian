@@ -2097,44 +2097,39 @@ Vex.UI.TickableType = {
 // Vex Utils ----------
 
 // validate whether the tutor input the correct number
-// Vex.UI.Handler.validateScore = function () {
-// 	var staves = this.staveList;
-// 	for (let i = 0; i < staves.length; i++) {
-// 		var tickables = staves[i].getTickables()
-// 		var barNum = 0
-// 		var barDuration = eval(timeSignature)
-// 		var accumDuration = 0
-// 		var notesInBars = []
+Vex.UI.validateScore = function (notesInBars, timeSignature) {
+	for (let i = 0; i < notesInBars.length; i++) {
+		var notes = notesInBars[i]
+		var barDuration = eval(timeSignature)
+		var accumDuration = 0
 	
-// 		for (var i = 0; i < tickables.length; i++) {
-// 			var noteArr = notes[i].split('/')
-// 			var dur = noteArr[2]
-// 			var isDot = false
-// 			if (dur.includes("r")) {
-// 				dur = dur.replace("r", "")
-// 			}
-// 			if (dur.includes("d")) {
-// 				dur = dur.replace("d", "")
-// 				isDot = true;
-// 			}
+		for (var j = 0; j < notes.length; j++) {
+			var noteArr = notes[j].split('/')
+			var dur = noteArr[2]
+			var isDot = false
+			if (dur.includes("r")) {
+				dur = dur.replace("r", "")
+			}
+			if (dur.includes("d")) {
+				dur = dur.replace("d", "")
+				isDot = true;
+			}
 
-// 			dur = 1 / parseInt(dur)
-// 			if (isDot) {
-// 				dur = dur * 1.5
-// 			}
+			dur = 1 / parseInt(dur)
+			if (isDot) {
+				dur = dur * 1.5
+			}
 
-// 			accumDuration += dur
-// 			tickables.push(notes[i])
-	
-// 			if (accumDuration == barDuration) {
-// 				notesInBars.push(tickables)
-// 				tickables = []
-// 				barNum++
-// 				accumDuration = 0
-// 			}
-// 	}
-// 	return staves.map(stave => stave.getTickables().map(tickable => tickable.getBoundingBox()))
-// }
+			accumDuration += dur
+		}
+
+		if (accumDuration != barDuration) {
+			return false
+		}
+	}
+
+	return true
+}
 
 Vex.UI.Handler.prototype.getNotePositions = function () {
 	var staves = this.staveList;
@@ -2178,7 +2173,7 @@ Vex.UI.notesToBars = function (notes, timeSignature) {
 			}
 		}
 		
-		if (tickables.length > 0 && barNum + 1 < this.options.numberOfStaves) {
+		if (tickables.length > 0) {
 			notesInBars.push(tickables)
 		}
 
