@@ -10,10 +10,12 @@
           :currEx="currEx" 
           :recording="recording" 
           :isNewFeedback="true"
-          :onClickNote="onClickNote" 
-          :clickedNoteOnset="clickedNoteOnset"
+          :onClickNote="onClickNote"
+          :clickedNoteOnset="selectedRowNum !== null && selectedIndex !== null ? notesByRow[selectedRowNum-1][selectedIndex].onset : null"
           :shouldIndicateNoteClicked="true"
         )
+        div(:style="{position:'absolute',left:commentButtonX+'px',top:commentButtonY+'px'}") hello
+
       v-divider
       v-btn(@click="publishComments" large color="indigo" dark) Publish Comments
 </template>
@@ -50,11 +52,16 @@ export default {
         this.isScrolling = false;
       }, 200);
     },
-    onClickNote(rowNum, noteIndex) {
+    onClickNote(rowNum, noteIndex, left) {
       if (this.selectedIndex !== noteIndex || this.selectedRowNum !== rowNum) {
         this.selectedIndex = noteIndex;
         this.selectedRowNum = rowNum;
         this.comment = this.notesByRow[rowNum - 1][noteIndex].comment ?? null;
+
+        this.commentButtonX = left + 28;
+        let yInterval = 137 + 150;
+        this.commentButtonY = (rowNum-1) * yInterval + 165
+          console.log(this.commentButtonY)
       }
     },
     async onCommentChange(data) {
@@ -72,13 +79,6 @@ export default {
       )).data.recording;
       this.recording = newRecording;
     },
-    clickedNoteOnset() {
-      if (this.selectedRowNum !== null && this.selectedIndex !== null)
-        return this.notesByRow[this.selectedRowNum - 1][this.selectedIndex]
-          .onset;
-      else return null;
-    },
-
     splitTranscriptionIntoRows(notes) {
       let timePerRow =
         (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
@@ -126,7 +126,10 @@ export default {
       selectedRowNum: null,
       selectedIndex: null,
       notesByRow: [],
-      transcribedNotes: []
+      transcribedNotes: [],
+
+        commentButtonX:0,
+        commentButtonY:0,
     };
   },
   created: async function() {
@@ -161,7 +164,8 @@ export default {
 }
 
 .commentCardScores {
-  flex-grow: 1;
-  overflow: auto;
+  /*flex-grow: 1;*/
+  /*overflow: auto;*/
+    position: relative;
 }
 </style>
