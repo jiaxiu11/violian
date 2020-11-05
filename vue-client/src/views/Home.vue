@@ -26,52 +26,37 @@
       v-row.mt-10(v-if="is_student && studentCourses.length > 0")
         v-col.text-left(cols="12")
           h2 My Courses
-        v-col(v-for="course in studentCourses.slice(0, cardsPerRow)" cols="12" sm="6" md="4" lg="3" :key="course.id")
-          v-card.mx-auto
-            v-img.white--text.align-end(v-if="course.coverPhotoUrl" height="200px" :src="course.coverPhotoUrl" gradient="to top right, rgba(0,0,0,.5), rgba(0,0,0,.5)")
-              v-card-title(style="text-shadow: 1px 1px 2px #000000;") {{ course.name }}
-            v-card-title(v-else) {{ course.name }}
-            v-card-subtitle.pb-0.text-left {{ course.instrument }}
-            v-card-text.text-left.text--primary.pb-0
-              div {{ course.tagline }}
+        v-col(v-for="course in studentCourses.slice(0, cardsPerRow)" cols="12" sm="6" md="4" lg="3" xl="2" :key="course.id")
+          course-card(:course="course")
             v-card-actions
               v-btn(color='indigo' text @click="go_to_course($event, course.id, course.lessons[0].id)")
                 | Continue Learning
+        v-col.text-left(cols="12")
+          v-btn(color='indigo' text @click="$router.push('/course/index')") See All
+            v-icon(right dark size="20") mdi-arrow-right
 
       v-row.mt-10(v-if="!is_student && tutorCourses.length > 0")
         v-col.text-left(cols="12")
           h2 My Courses
-        v-col(v-for="course in tutorCourses.slice(0, cardsPerRow)" cols="12" sm="6" md="4" lg="3" :key="course.id")
-          v-card.mx-auto
-            v-img.white--text.align-end(v-if="course.coverPhotoUrl" height="200px" :src="course.coverPhotoUrl" gradient="to top right, rgba(0,0,0,.5), rgba(0,0,0,.5)")
-              v-card-title(style="text-shadow: 1px 1px 2px #000000;") {{ course.name }}
-            v-card-title(v-else) {{ course.name }}
-            v-card-subtitle.pb-0.text-left {{ course.instrument }}
-            v-card-text.text-left.text--primary.pb-0
-              div {{ course.tagline }}
+        v-col(v-for="course in tutorCourses.slice(0, cardsPerRow)" cols="12" sm="6" md="4" lg="3" xl="2" :key="course.id")
+          course-card(:course="course")
             v-card-actions
               v-btn(color='indigo' text @click="go_to_course_edit($event, course.id)")
                 | Edit
               v-btn(color='indigo' text @click="go_to_course($event, course.id, course.lessons[0].id)")
                 | View
-
-      v-row.mt-10
         v-col.text-left(cols="12")
-          h2 Popular Courses
-        v-col(v-for="course in popularCourses" cols="12" sm="6" md="4" lg="3" :key="course.id")
-          v-card.mx-auto
-            v-img.white--text.align-end(v-if="course.coverPhotoUrl" height="200px" :src="course.coverPhotoUrl" gradient="to top right, rgba(0,0,0,.5), rgba(0,0,0,.5)")
-              v-card-title(style="text-shadow: 1px 1px 2px #000000;") {{ course.name }}
-            v-card-title(v-else) {{ course.name }}
-            v-card-subtitle.pb-0.text-left {{ course.instrument }}
-            v-card-text.text-left.text--primary.pb-0
-              div {{ course.tagline }}
+          v-btn(color='indigo' dark @click="$router.push('/course/index')") See All
+            v-icon(right dark size="20") mdi-arrow-right
+
+      v-row.mt-10(v-for="courseEntry in Object.entries(coursesInCategory)")
+        v-col.text-left(cols="12")
+          h2 {{ courseEntry[0] }} Courses
+        v-col(v-for="course in courseEntry[1].slice(0, cardsPerRow)" cols="12" sm="6" md="4" lg="3" xl="2" :key="course.id")
+          course-card(:course="course")
             v-card-actions
               v-btn(color='indigo' text @click="go_to_course($event, course.id)")
                 | Find out more
-
-
-
 </template>
 
 <script>
@@ -79,9 +64,14 @@ import { mapState } from 'vuex'
 import CourseService from '@/services/CourseService'
 import SubscriptionService from '@/services/SubscriptionService'
 import _ from 'lodash'
+import CourseCard from '@/components/Course/CourseCard'
 
 export default {
   name: 'Home',
+  components: {
+    'course-card': CourseCard
+  },
+
   data () {
     return {
       isLoading: false,
@@ -90,7 +80,8 @@ export default {
       search: null,
       popularCourses: [],
       studentCourses: [],
-      tutorCourses: []
+      tutorCourses: [],
+      coursesInCategory: {}
     }
   },
 
@@ -173,6 +164,14 @@ export default {
         this.studentCourses = (await SubscriptionService.getSubscriptionInfoOfStudent(this.user.id)).data.courses
       } else {
         this.tutorCourses = (await CourseService.list(this.user.id)).data.courses
+      }
+    }
+
+    for (let i = 0; i < this.popularCourses.length; i++) {
+      if (this.coursesInCategory[this.popularCourses[i].instrument] == undefined) {
+        this.$set(this.coursesInCategory, this.popularCourses[i].instrument, [this.popularCourses[i]])
+      } else {
+        this.$set(this.coursesInCategory, this.popularCourses[i].instrument, this.popularCourses[i].instrument.concat(this.popularCourses[i]))
       }
     }
   }
