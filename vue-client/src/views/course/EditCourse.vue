@@ -75,8 +75,7 @@
                 strong Name: 
                 | {{ lesson.name }}
               v-col(cols="12" md="4")
-                strong Duration: 
-                | {{ lesson.duration }}
+                
               v-spacer
               v-btn.mr-3(outlined color='indigo' right @click='editLesson($event, lesson)')
                 v-icon(color="indigo") mdi-pencil

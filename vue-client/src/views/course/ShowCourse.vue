@@ -41,7 +41,7 @@
                 h1.pl-5.font-weight-bold(style="font-size: 36px;") S${{ course.price ? course.price.toFixed(2): '0' }}
             v-row
               v-col.text-center
-                v-btn(color="#ec5252" dark @click="subscribe" style="width:90%" x-large v-if="course.price == 0") Enroll Now
+                v-btn(color="#ec5252" dark @click="subscribe" style="width:90%; font-weight:bold;" x-large v-if="course.price == 0") Enroll Now
                 v-btn(color="#ec5252" dark @click="subscribe" style="width:90%" x-large v-else) Buy Now
         v-col.my-auto(cols="12" md="4" v-if="isSubscribed || isOwned")
           v-row
@@ -233,6 +233,7 @@ export default {
           })
         } else {
           alert('Please register or login first')
+          this.$router.push(`/login`)
         }
       } else {
         this.$router.push(`/payment/${this.course.id}`)
