@@ -1,11 +1,10 @@
 <template lang="pug">
   v-card.mx-10.my-10(class="commentCard")
       v-card-title Click on a note in student's recording to leave comment
-      v-card-subtitle(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
-      v-text-field.mx-10(label="comment" hint="Press enter to save" persistent-hint outlined append-icon="mdi-keyboard-return" :disabled="selectedIndex == null" @change="onCommentChange" v-model="comment")
       v-divider
-      v-card-text(class="commentCardScores" v-on:scroll.passive='onLineGraphScroll')
+      v-card-text(class="commentCardScores")
         score-feedback(
+            id="scoresAndLineGraphs"
           v-if="currEx && recording" 
           :currEx="currEx" 
           :recording="recording" 
@@ -14,10 +13,39 @@
           :clickedNoteOnset="selectedRowNum !== null && selectedIndex !== null ? notesByRow[selectedRowNum-1][selectedIndex].onset : null"
           :shouldIndicateNoteClicked="true"
         )
-        div(:style="{position:'absolute',left:commentButtonX+'px',top:commentButtonY+'px'}") hello
-
-      v-divider
-      v-btn(@click="publishComments" large color="indigo" dark) Publish Comments
+        v-row(v-if="selectedIndex !== null" justify="center" :style="{position:'absolute',left:commentButtonX+'px',top:commentButtonY+'px'}")
+          v-dialog(v-model="commentDialog" persistent max-width="600px")
+            template(v-slot:activator="{ on, attrs }")
+              v-btn(icon medium elevation="2" v-bind="attrs" v-on="on")
+                v-icon mdi-pencil
+            v-card
+              v-card-title
+                span(class="headline") Comment on a note
+              v-card-subtitle.mt-2(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
+              v-card-text
+                v-container
+                  v-row
+                    v-text-field(
+                        label="comment"
+                        hint="Press enter to save"
+                        persistent-hint
+                        append-icon="mdi-keyboard-return"
+                        :disabled="selectedIndex == null"
+                        @change="onCommentChange"
+                        v-model="comment"
+                        )
+              v-card-actions
+                v-spacer
+                v-btn(color="blue darken-1" text @click="commentDialog = false") Cancel
+                v-btn(color="blue darken-1" text @click="onCommentChange") Save
+        v-divider
+        div.mx-5.mt-5
+          span.text-h6 General comment on student's practice
+          v-textarea.mt-3(label="General Comment" auto-grow outlined v-model="generalComment")
+          v-btn.mb-3(@click="onGeneralCommentChange") Save general comment
+        v-divider
+      v-card-actions.justify-center
+        v-btn(@click="publishComments" large color="indigo" dark style="margin:0 auto;") Publish Comments to Student
 </template>
 
 <script>
@@ -36,11 +64,11 @@ export default {
     async publishComments() {
       const recordingId = this.recording.id;
       await RecordingService.markAsCommented(recordingId);
-      this.$store.dispatch('clearOneNotification')
-      alert('Your comment is sent to student!')
-      this.$router.push('/notifications')
+      this.$store.dispatch("clearOneNotification");
+      alert("Your comment is sent to student!");
+      this.$router.push("/notifications");
     },
-    
+
     onLineGraphScroll() {
       clearTimeout(this.scrollTimeout);
 
@@ -58,25 +86,42 @@ export default {
         this.selectedRowNum = rowNum;
         this.comment = this.notesByRow[rowNum - 1][noteIndex].comment ?? null;
 
-        this.commentButtonX = left + 28;
+        let scoresAndLineGraphs = document.getElementById('scoresAndLineGraphs');
+        let leftOffset = scoresAndLineGraphs.getBoundingClientRect().left - 18
+        this.commentButtonX = left + leftOffset;
         let yInterval = 137 + 150;
-        this.commentButtonY = (rowNum-1) * yInterval + 165
-          console.log(this.commentButtonY)
+        this.commentButtonY = (rowNum - 1) * yInterval + 150;
       }
     },
-    async onCommentChange(data) {
+    async onCommentChange() {
       let rowIndex = this.selectedRowNum - 1;
       let row = [...this.notesByRow[rowIndex]];
       let note = { ...this.notesByRow[rowIndex][this.selectedIndex] };
-      note.comment = data;
+      note.comment = this.comment;
       row[this.selectedIndex] = note;
       this.$set(this.notesByRow, rowIndex, row);
 
       let updatedTranscriptions = JSON.stringify(this.notesByRow.flat());
-      let newRecording = (await RecordingService.updateFeedback(
-        this.recording.id,
-        updatedTranscriptions
-      )).data.recording;
+      let newRecording = (
+        await RecordingService.updateFeedback(
+          this.recording.id,
+          updatedTranscriptions
+        )
+      ).data.recording;
+      this.recording = newRecording;
+
+      this.commentDialog = false;
+    },
+
+    async onGeneralCommentChange() {
+      let updatedTranscriptions = JSON.stringify(this.notesByRow.flat());
+      let newRecording = (
+        await RecordingService.updateFeedback(
+          this.recording.id,
+          updatedTranscriptions,
+          this.generalComment
+        )
+      ).data.recording;
       this.recording = newRecording;
     },
     splitTranscriptionIntoRows(notes) {
@@ -122,14 +167,16 @@ export default {
 
       scrollTimeout: null,
       isScrolling: false,
-      comment: null,
       selectedRowNum: null,
       selectedIndex: null,
       notesByRow: [],
       transcribedNotes: [],
 
-        commentButtonX:0,
-        commentButtonY:0,
+      commentButtonX: 0,
+      commentButtonY: 0,
+      commentDialog: false,
+      comment: null,
+      generalComment: null
     };
   },
   created: async function() {
@@ -151,6 +198,7 @@ export default {
     if (this.recording != null) {
       this.transcribedNotes = JSON.parse(this.recording.transcription);
       this.notesByRow = this.splitTranscriptionIntoRows(this.transcribedNotes);
+      this.generalComment = this.recording.overallComment;
     }
   }
 };
@@ -164,8 +212,6 @@ export default {
 }
 
 .commentCardScores {
-  /*flex-grow: 1;*/
-  /*overflow: auto;*/
-    position: relative;
+  position: relative;
 }
 </style>
