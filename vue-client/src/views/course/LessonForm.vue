@@ -31,6 +31,7 @@ v-container
                             prepend-icon="mdi-video" 
                             label="Demo Video"
                             v-model="exercise.video"
+                            @change="onVideoPosterInput"
                             outlined
                             color="indigo"
                             dense
@@ -43,7 +44,7 @@ v-container
                             prepend-icon="mdi-image" 
                             label="Demo Video Poster (Optional)"
                             v-model="exercise.videoPoster"
-                          @change="onVideoPosterInput"
+                            @change="onVideoPosterInput"
                             outlined
                             color="indigo"
                             dense
