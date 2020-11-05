@@ -14,6 +14,7 @@
         v-btn(depressed to="/register" color="white") Register
         v-btn(depressed to="/login" color="white") Log In
       v-toolbar-items(v-if="$store.state.isUserLoggedIn && !minimiseNav")
+        v-btn(depressed to="/" color="white") Home
         v-btn(depressed to="/course/index" color="white") My Courses
         //- v-btn(depressed to="/courses/threads/index" style="position: relative;" color="white") Notifications
         //-   #notification {{ notifications }}
@@ -74,7 +75,11 @@ export default {
     logout () {
       this.$store.dispatch('setToken', null)
       this.$store.dispatch('setUser', null)
-      this.$router.push('/')
+      if (this.$route.path == "/") {
+        this.$router.go()
+      } else {
+        this.$router.push('/')
+      }
     }
   },
 

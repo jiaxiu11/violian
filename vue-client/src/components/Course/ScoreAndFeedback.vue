@@ -176,7 +176,8 @@ export default {
           canvasProperties: {
             width,
             id: `vexflow-wrapper-${i}` + "-canvas",
-          }
+          },
+          timeSignature: this.currEx.timeSignature
         }).init())
 
         this.handlers[i].importNotes(this.scoreRows[i], this.currEx.timeSignature)

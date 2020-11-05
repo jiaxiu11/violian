@@ -217,7 +217,6 @@ export default {
           }
         }).init()
       }
-      console.log(this.newLesson.exercises[exerciseIdx].handler)
     },
     
     changeTimeSignature (event, exerciseIdx) {
@@ -463,6 +462,7 @@ export default {
               pannel.appendChild(div)
               this.newLesson.exercises[i].handler = new vexUI.Handler(div.id, {
                 numberOfStaves: this.newLesson.exercises[i].numberOfBars,
+                timeSignature: this.newLesson.exercises[i].timeSignature,
                 canvasProperties: {
                   id: div.id + '-canvas',
                   width: pannel.offsetWidth,
