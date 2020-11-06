@@ -4,7 +4,8 @@
       v-col(cols='12' sm='10' :md='md || 6')
         v-card.elevation-8
           v-toolbar(light)
-            v-toolbar-title.text-h4 {{ title }}
+            v-toolbar-title
+              h2.font-weight-bold {{ title }}
             v-spacer
           slot No slot defined
 </template>

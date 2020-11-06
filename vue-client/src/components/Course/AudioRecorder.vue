@@ -31,19 +31,21 @@
             </v-icon>
           </v-btn>
           <v-chip style="position:absolute; bottom:0; left:calc(50% + 48px);"><strong>{{ formattedElapsedTime }}</strong></v-chip>
-          <v-chip style="position:absolute; bottom:0; left:calc(70%);">
+          
+          <v-chip style="position:absolute; bottom:0; left:calc(70%);" v-if="bpmConfirmed" @click="bpmClicked">
             <v-icon left>
               mdi-music-note-eighth
             </v-icon>
-            <strong>= {{ currEx.bpm }}</strong>
+            <strong>= {{ bpm }}</strong>
           </v-chip>
-          <!-- <v-chip style="position:absolute; bottom:0; left:calc(70%);">
+
+          <v-chip style="position:absolute; bottom:0; left:calc(70%);" v-else>
             <v-icon left>
               mdi-music-note-eighth
             </v-icon>
             <strong>=</strong>
-            <input type="text" name="fname" v-model="bpm" @keyup.enter="alert('enter pressed')">
-          </v-chip> -->
+            <input ref="bpmInput" type="text" name="fname" v-model="bpm" v-on:keyup="keyPressed" v-click-outside="onClickOutside">
+          </v-chip>
         </div>
 
         <v-divider class="my-4" v-show="showSubmit"></v-divider>
@@ -140,7 +142,7 @@
     </div> -->
     <v-row>
       <v-col cols="12">
-        <score-feedback :currEx="currEx" :isNewRecording="true" :elapsedTime="elapsedTime/1000" :start="start">
+        <score-feedback :currEx="currEx" :isNewRecording="true" :elapsedTime="elapsedTime/1000" :start="start" :bpm="bpm">
         </score-feedback>
       </v-col>
     </v-row>
@@ -191,15 +193,16 @@ export default {
       totalTime: 0,
 
       settings: [],
-      bpm:0
+      bpm: this.currEx.bpm,
+      bpmConfirmed: true
     }
   },
   watch: {
-    // dialog (val) {
-    //   if (!val) return
-
-    //   setTimeout(() => (this.dialog = false), 1000)
-    // },
+    bpm: function (val) {
+      if (typeof val == "number") {
+        this.totalTime = this.countDown * 1000 * 60 / val * this.currEx.numberOfBars
+      }
+    },
   },
   computed: {
     showSubmit() {
@@ -226,23 +229,47 @@ export default {
   },
 
   methods: {
+    keyPressed (e) {
+      if (e.code == "Enter") {
+        this.bpmConfirmed = true
+        let bpm = parseInt(this.bpm)
+        if (bpm >= 30 && bpm <= 180) {
+          this.bpm = bpm
+        } else if (bpm < 30) {
+          this.bpm = 30
+        } else {
+          this.bpm = 180
+        }
+      }
+    },
+
+    onClickOutside () {
+      this.bpmConfirmed = true
+      let bpm = parseInt(this.bpm)
+      if (bpm >= 30 && bpm <= 180) {
+        this.bpm = bpm
+      } else if (bpm < 30) {
+        this.bpm = 30
+      } else {
+        this.bpm = 180
+      }
+    },
+
+    async bpmClicked () {
+      this.bpmConfirmed = false
+      await this.$nextTick()
+      this.$refs['bpmInput'].select()
+    },
+
     countDownTimer() {
         if(this.countDown > 0) {
             setTimeout(() => {
                 this.countDown -= 1
                 this.countDownTimer()
-            }, 1000 * 60 / this.currEx.bpm)
+            }, 1000 * 60 / this.bpm)
         }
 
         if (this.countDown == 0) {
-          // const record = document.getElementById('recButton');
-          // if (record.classList.contains('notRec')) {
-          //   record.classList.remove('notRec');
-          //   record.classList.add('Rec');
-          // } else {
-          //   record.classList.add('notRec');
-          //   record.classList.remove('Rec');
-          // }
           if (!this.isRecording) {
             this.onStart()
             this.isRecording = true;
@@ -270,6 +297,11 @@ export default {
     },
 
     onClick(e) {
+      if (!this.bpmConfirmed) {
+        alert('Please choose a bpm to record with')
+        return
+      }
+
       if (!this.isRecording && !this.hasCountDownStarted) {
         this.countDownTimer();
         this.hasCountDownStarted = true;
@@ -288,7 +320,10 @@ export default {
         return
       }
       this.dialog = true
-      const file = this.recordingsData[this.selectedFileIndex][2];
+      const blob = this.recordingsData[this.selectedFileIndex][2];
+      const clipName = this.recordingsData[this.selectedFileIndex][0];
+      const fileName = clipName.concat(".ogg");
+      const file = new File([blob], fileName);
       console.log(file)
       try {
         let formData = new FormData()
@@ -328,11 +363,7 @@ export default {
     },
 
     onSuccess(stream) {
-      // const soundClips = document.querySelector('.sound-clips');
-      // const mainSection = document.querySelector('.main-controls');
-      // console.log(soundClips, mainSection)
       const mediaRecorder = new MediaRecorder(stream);
-      // this.visualize(stream);
 
       this.mediaRecorder = mediaRecorder;
       var chunks = [];
@@ -344,9 +375,8 @@ export default {
         var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=vorbis' });
         chunks = [];
         const audioURL = window.URL.createObjectURL(blob);
-        const fileName = clipName.concat(".ogg");
-        const file = new File([blob], fileName);
-        this.recordingsData.push([clipName, audioURL, file]);
+        
+        this.recordingsData.push([clipName, audioURL, blob]);
       }
 
       mediaRecorder.ondataavailable = (e) => {
@@ -360,73 +390,11 @@ export default {
     changeFileName(index) {
       const existingName = this.recordingsData[index][0];
       const newClipName = prompt('Enter a new name for your sound clip?');
-      var newData = this.recordingsData[index];
-      newData[0] = newClipName
-      console.log(newData)
 
-      if(newClipName === null) {
-        this.recordingsData[index]= newData;
-      } else {
-        this.recordingsData[index] = newData;
-      }
+      if(newClipName !== null && newClipName.trim().length > 0) {
+        this.recordingsData[index][0] = newClipName;
+      } 
     },
-
-    visualize(stream) {
-      const canvas = document.querySelector('.visualizer');
-      const canvasCtx = canvas.getContext("2d");
-
-      if(!this.audioCtx) {
-        this.audioCtx = new AudioContext();
-      }
-
-      const source = this.audioCtx.createMediaStreamSource(stream);
-
-      const analyser = this.audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-
-      source.connect(analyser);
-      draw()
-
-      function draw() {
-        const WIDTH = canvas.width
-        const HEIGHT = canvas.height;
-
-        requestAnimationFrame(draw);
-
-        analyser.getByteTimeDomainData(dataArray);
-
-        canvasCtx.fillStyle = 'rgb(200, 200, 200)';
-        canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
-
-        canvasCtx.lineWidth = 2;
-        canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
-
-        canvasCtx.beginPath();
-
-        let sliceWidth = WIDTH * 1.0 / bufferLength;
-        let x = 0;
-
-
-        for(let i = 0; i < bufferLength; i++) {
-
-          let v = dataArray[i] / 128.0;
-          let y = v * HEIGHT/2;
-
-          if(i === 0) {
-            canvasCtx.moveTo(x, y);
-          } else {
-            canvasCtx.lineTo(x, y);
-          }
-
-          x += sliceWidth;
-        }
-
-        canvasCtx.lineTo(canvas.width, canvas.height/2);
-        canvasCtx.stroke();
-      }
-    }
 
   }
 }

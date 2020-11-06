@@ -41,12 +41,12 @@
                 h1.pl-5.font-weight-bold(style="font-size: 36px;") S${{ course.price ? course.price.toFixed(2): '0' }}
             v-row
               v-col.text-center
-                v-btn(color="#ec5252" dark @click="subscribe" style="width:90%" x-large v-if="course.price == 0") Enroll Now
+                v-btn(color="#ec5252" dark @click="subscribe" style="width:90%; font-weight:bold;" x-large v-if="course.price == 0") Enroll Now
                 v-btn(color="#ec5252" dark @click="subscribe" style="width:90%" x-large v-else) Buy Now
         v-col.my-auto(cols="12" md="4" v-if="isSubscribed || isOwned")
           v-row
             v-col.text-center
-              v-btn(color="#26A69A" dark style="width:90%" x-large @click="goToLesson($event, course.lessons[0])") Start Learning!
+              v-btn(color="#26A69A" dark style="width:90%" x-large @click="goToLesson($event, course.lessons[0])") Continue Learning!
 
     v-container(fluid v-if="course.learningPoints")
       v-row.px-sm-16.mx-md-8.mx-lg-16
@@ -122,18 +122,18 @@
                       v-icon mdi-unfold-more-horizontal
 
                   v-list
-                    v-list-item(v-for='(lesson, idx) in course.lessons' :key='lesson.id' shaped :disabled="idx != 0" @click="goToLesson($event, lesson)")
-                      v-list-item-icon(v-if="idx == 0")
-                        v-icon(color='#ec5252') mdi-play
-                      v-list-item-icon(v-else)
+                    v-list-item(v-for='(lesson, idx) in course.lessons' :key='lesson.id' shaped :disabled="idx != 0")
+                      //- v-list-item-icon(v-if="idx == 0")
+                      //-   v-icon(color='#ec5252') mdi-play
+                      v-list-item-icon
                         v-icon(color='rgba(0, 0, 0, 0.38)') mdi-play
                       v-list-item-content
                         v-list-item-title(v-text='lesson.name')
                       v-spacer
                       //- v-list-item-icon(v-if="idx == 0")
                       //-   div(to="/") Preview
-                      v-list-item-icon
-                        div {{ lesson.duration }} mins
+                      //- v-list-item-icon
+                      //-   div {{ lesson.duration }} mins
 
     v-row(justify='center')
       v-dialog(v-model='dialog' max-width='calc(100vw * 0.8)' v-if="dialog")
@@ -233,6 +233,7 @@ export default {
           })
         } else {
           alert('Please register or login first')
+          this.$router.push(`/login`)
         }
       } else {
         this.$router.push(`/payment/${this.course.id}`)

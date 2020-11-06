@@ -26,7 +26,15 @@ export default {
     return Api().get(`recording/get-unread-comments`)
   },
 
+  getUncommentedRecordings () {
+    return Api().get(`recording/get-uncommented-recordings`)
+  },
+
   markAsRead(recordingId) {
-    return Api().post(`/recording/mark?rid=${recordingId}`)
+    return Api().post(`/recording/mark-read?rid=${recordingId}`)
+  },
+
+  markAsCommented(recordingId) {
+    return Api().post(`/recording/mark-commented?rid=${recordingId}`)
   }
 }

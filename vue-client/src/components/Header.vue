@@ -14,11 +14,14 @@
         v-btn(depressed to="/register" color="white") Register
         v-btn(depressed to="/login" color="white") Log In
       v-toolbar-items(v-if="$store.state.isUserLoggedIn && !minimiseNav")
+        v-btn(depressed to="/" color="white") Home
         v-btn(depressed to="/course/index" color="white") My Courses
-        //- v-btn(depressed to="/courses/threads/index" style="position: relative;" color="white") Notifications
-        //-   #notification {{ notifications }}
-        v-btn(depressed to="/notifications" color="white") Notifications
+        v-btn(depressed to="/notifications" color="white" v-if="is_student && notifications > 0") Notifications
           #notification {{ notifications }}
+        v-btn(depressed to="/notifications" color="white" v-else-if="is_student") Notifications
+        v-btn(depressed to="/notifications" color="white" v-else-if="!is_student && notifications > 0") Submissions
+          #notification {{ notifications }}
+        v-btn(depressed to="/notifications" color="white" v-else) Submissions
         v-btn(depressed @click="logout" color="white") Log Out
 
       v-app-bar-nav-icon(@click="drawer = true" v-if="minimiseNav")
@@ -57,13 +60,14 @@
 
 <script>
 import {mapState} from 'vuex'
+import RecordingService from "@/services/RecordingService"
 
 export default {
   name: 'Header',
   data () {
     return {
       drawer: false,
-      messages: 0
+      messages: 0,
     }
   },
 
@@ -71,7 +75,11 @@ export default {
     logout () {
       this.$store.dispatch('setToken', null)
       this.$store.dispatch('setUser', null)
-      this.$router.push('/')
+      if (this.$route.path == "/") {
+        this.$router.go()
+      } else {
+        this.$router.push('/')
+      }
     }
   },
 
@@ -87,10 +95,27 @@ export default {
       }
     },
 
+    is_student () {
+      if (this.user) {
+        return this.user.isStudent
+      } else {
+        return null
+      }
+    },
+
     ...mapState(['user', 'notifications'])
   },
 
-  mounted: function () {
+  mounted: async function () {
+    if (this.user) {
+      if (this.is_student) {
+        let recordings = (await RecordingService.getUnreadComments()).data.recordings;
+        this.$store.dispatch('setNotifications', recordings.length)
+      } else {
+        let recordings = (await RecordingService.getUncommentedRecordings()).data.recordings
+        this.$store.dispatch('setNotifications', recordings.length)
+      }
+    }
   }
 }
 </script>

@@ -46,11 +46,12 @@
             v-form(ref="languageForm" @submite.prevent="submit")
               v-row.mb-8
                 v-col
-                  h1.font-weight-bold What language do you use?
+                  h1.font-weight-bold Choose a cover photo!
 
               v-row.mb-16
                 v-col
-                  v-select.mx-auto(label='Language' :items="languages" v-model="language" outlined color="indigo" style="width:60vw;")
+                  //- v-select.mx-auto(label='Language' :items="languages" v-model="language" outlined color="indigo" style="width:60vw;")
+                  v-file-input.pr-3(label='Cover photo' v-model="coverPhoto" outlined color="indigo" :rules="requiredRules" accept="image/*")
 
             v-row.justify-center
               v-col.text-center
@@ -82,7 +83,8 @@ export default {
 
       requiredRules: [
         v => !!v || "This field is required"
-      ]
+      ],
+      coverPhoto: null
     }
   },
 
@@ -117,6 +119,7 @@ export default {
           courseFormData.set('TutorId', this.user.id)
           courseFormData.set('publishNow', this.publishNow)
           courseFormData.set('price', 0.0)
+          courseFormData.append('coverPhoto', this.coverPhoto)
 
           let courseResponse = await CourseService.create(courseFormData)
 

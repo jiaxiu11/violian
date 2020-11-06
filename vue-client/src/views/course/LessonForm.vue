@@ -77,7 +77,7 @@ v-container
                             div.pl-0 No. Bars:   {{ exercise.numberOfBars }}
                             v-slider(v-model='exercise.numberOfBars' min='0' max='16' thumb-label :thumb-size="24" @change="changeBars($event, exerciseIdx)" color="indigo" track-color="indigo lighten-3" hide-details)
                         v-row
-                          v-col.pa-0(:id="`pannel-content-${exerciseIdx}`" @click="changeMelody($event, exerciseIdx)")
+                          v-col.pa-0(:id="`pannel-content-${exerciseIdx}`" @click="changeMelody($event, exerciseIdx)" @wheel="changeMelody($event, exerciseIdx)")
                       div(v-show="exercise.useXml && exercise.useScore")
                         v-row
                           v-col(cols="12" md="6")
@@ -168,7 +168,6 @@ export default {
 
       // dialog
       fileDialog: false,
-      newFiles: [],
 
       // options for file CRUD
       options: ['Download', 'Delete'],
@@ -178,27 +177,21 @@ export default {
       openedExercise: [0]
     }
   },
-  
-  // watch: {
-  //   newFiles (val) {
-  //     console.log(val)
-  //   }
-  // },
 
   methods: {
-      onVideoPosterInput() {
-          this.componentKey += 1
-      },
-      getFileUrl(file) {
-          if(!file) {
-              return null
-          }
-          if (typeof file === 'string') {
-              return file
-          }
-          let url = window.URL.createObjectURL(file)
-          return url
-      },
+    onVideoPosterInput() {
+        this.componentKey += 1
+    },
+    getFileUrl(file) {
+        if(!file) {
+            return null
+        }
+        if (typeof file === 'string') {
+            return file
+        }
+        let url = window.URL.createObjectURL(file)
+        return url
+    },
     showFile () {
       this.fileDialog = true
     },
@@ -218,7 +211,6 @@ export default {
           }
         }).init()
       }
-      console.log(this.newLesson.exercises[exerciseIdx].handler)
     },
     
     changeTimeSignature (event, exerciseIdx) {
@@ -226,7 +218,6 @@ export default {
     },
 
     changeBars (event, exerciseIdx) {
-      console.log(exerciseIdx)
       this.newLesson.exercises[exerciseIdx].handler.changeNumberOfBars(this.newLesson.exercises[exerciseIdx].numberOfBars, this.newLesson.exercises[exerciseIdx].handler.exportNotes())
     },
 
@@ -234,11 +225,23 @@ export default {
       this.newLesson.exercises[exerciseIdx].melody = this.newLesson.exercises[exerciseIdx].handler.exportNotes()
     },
 
+    validateMelody(notesInBars, timeSignature) {
+      return vexUI.validateScore(notesInBars, timeSignature)
+    },
+
     async update () {
       var tempLesson = this.newLesson
 
       if (!this.$refs.lessonForm.validate())
         return
+
+      console.log(vexUI.notesToBars(tempLesson.exercises[0].melody, tempLesson.exercises[0].timeSignature))
+      for (let i = 0; i < tempLesson.exercises.length; i++) {
+        if (!this.validateMelody(vexUI.notesToBars(tempLesson.exercises[i].melody, tempLesson.exercises[i].timeSignature), tempLesson.exercises[i].timeSignature)) {
+          alert('Note value does not equal to time signature indicated of a bar')
+          return
+        }
+      }
 
       for (let i = 0; i < tempLesson.exercises.length; i++) {
         if (tempLesson.exercises[i].useScore && !tempLesson.exercises[i].musicXml && tempLesson.exercises[i].melody.length == 0) {
@@ -339,70 +342,6 @@ export default {
       this.$router.push(`/course/edit/${this.lesson.CourseId}`)
     },
 
-    async newFile () {
-      if (this.$refs.fileForm.validate()) {
-        this.loading = true
-        if (this.lesson) {
-          this.newFiles.forEach(async f => {
-            let formData = new FormData()
-            formData.set('lessonId', this.lesson.id)
-            formData.set('name', f.name)
-            formData.set('size', parseInt(f.size / 1024))
-            formData.set('type', f.type)
-            formData.append('file', f)
-            this.newLesson.files.push((await FileService.create(formData)).data.file)
-          })
-        } else {
-          this.newLesson.files = this.newLesson.files.concat(this.newFiles.map(f => {
-            return {
-              file: f,
-              size: f.size / 1024,
-              type: f.type,
-              name: f.name
-            }
-          }))
-        }
-        this.newFiles = []
-        this.fileDialog = false
-        this.loading = false
-      }
-    },
-
-    async fileCrud (event, file, action) {
-      if (action == 'Download') {
-        var zip = new JSZip();
-        fetch(file.url)
-          .then(resp => resp.blob())
-          .then(content => saveAs(content, file.name));
-      } else if (action == 'Delete') {
-        let idx = this.newLesson.files.indexOf(file)
-        this.newLesson.files.splice(idx, 1)
-        await FileService.delete(file.id)
-      } else if (action == 'Download All') {
-        if (this.newLesson.files.length > 0) {
-          const zip = new JSZip()
-          let files = this.newLesson.files
-          Promise.all(files.map(file => fetch(file.url))).then(function (responses) {
-            // Get a JSON object from each of the responses
-            return Promise.all(responses.map(function (response) {
-              return response.blob();
-            }));
-          }).then(function (data) {
-            for (var i = 0; i < data.length; i++) {
-              zip.file(files[i].name, data[i])
-            }
-            zip.generateAsync({type:"blob"})
-              .then(function (blob) {
-                saveAs(blob, "download.zip")
-              })
-          }).catch(function (error) {
-            // if there's an error, log it
-            console.log(error);
-          });
-        }
-      }
-    },
-
     newExercise () {
       this.newLesson.exercises.push({
         name: '',
@@ -464,6 +403,7 @@ export default {
               pannel.appendChild(div)
               this.newLesson.exercises[i].handler = new vexUI.Handler(div.id, {
                 numberOfStaves: this.newLesson.exercises[i].numberOfBars,
+                timeSignature: this.newLesson.exercises[i].timeSignature,
                 canvasProperties: {
                   id: div.id + '-canvas',
                   width: pannel.offsetWidth,

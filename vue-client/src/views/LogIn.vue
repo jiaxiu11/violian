@@ -40,8 +40,7 @@
 
 <script>
 import AuthenticationService from '@/services/AuthenticationService'
-import SubscriptionService from '@/services/SubscriptionService'
-import CourseService from '@/services/CourseService'
+import RecordingService from '@/services/RecordingService'
 
 export default {
   name: 'LogIn',
@@ -78,17 +77,11 @@ export default {
         this.$store.dispatch('setUser', response.data.user)
 
         if (response.data.user.isStudent) {
-          const studentResponse = await SubscriptionService.getSubscriptionInfoOfStudent(response.data.user.id)
-          const userSubscribedCourses = studentResponse.data.courses
-          let totalUnread = 0
-          userSubscribedCourses.forEach(course => totalUnread += course.unreadTutorPost)
-          this.$store.dispatch('setNotifications', totalUnread)
+          let recordings = (await RecordingService.getUnreadComments()).data.recordings;
+          this.$store.dispatch('setNotifications', recordings.length)
         } else {
-          const tutorResponse = await CourseService.list(response.data.user.id);
-          const userOwnedCourses = tutorResponse.data.courses
-          let totalUnread = 0
-          userOwnedCourses.forEach(course => totalUnread += course.unreadStudentPost)
-          this.$store.dispatch('setNotifications', totalUnread)
+          let recordings = (await RecordingService.getUncommentedRecordings()).data.recordings
+          this.$store.dispatch('setNotifications', recordings.length)
         }
         
         this.$router.push({

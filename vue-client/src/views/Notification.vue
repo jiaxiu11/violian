@@ -1,61 +1,80 @@
 <template>
-  <v-container text-center>
-  <h1 style="margin:2rem;">Notifications</h1>
-
+  <v-card
+    class="mx-auto"
+    style="margin-top:30px;"
+    max-width="700"
+    
+    v-if="notifications==0"
+  ><v-row justify="center">
+      <h1>No {{isTutor?'submissions':'notifications'}} found</h1>
+    </v-row>
+  </v-card>
   <v-card
     class="mx-auto"
     max-width="700"
-    tile
+    style="margin-top:30px;"
+    v-else
   >
-    <v-list rounded>
-      <v-list-item-group
-        color="primary"
-        
-      >
-      
-        <v-list-item
-          v-for="(item, i) in recordings"
-          :key="i"
-        >
-          <v-list-item-icon>
-            <v-icon>mdi-bell</v-icon>
-          </v-list-item-icon>
-          <v-list-item-content @click="redirect(item)">
-            <v-list-item-title>
-              <v-row>
-                <v-col cols="8">
-                  <label class="comment" @click="redirect(item)"  v-text="getMessage(item)"></label>
-                </v-col>
-                <v-col cols="3">
-                  <v-chip style="margin-right:0.5rem; margin-bottom:2rem;"
-                    class="ma-2"
-                    color="#fffcbd"
-                    label
-                  >{{getTime(item)}}
-                  </v-chip>
-                </v-col>
-              </v-row>
-              <v-divider></v-divider>
+    <v-toolbar
+      color="teal"
+      dark
+    >
+      <v-app-bar-nav-icon></v-app-bar-nav-icon>
+      <v-toolbar-title>Submissions</v-toolbar-title>
 
-            </v-list-item-title>
+      <v-spacer></v-spacer>
+    </v-toolbar>
+
+    <v-list>
+      <v-list-group
+        v-for="(recordings, key) in sortedRecordings"
+        :key="key"
+        no-action
+      >
+        <template v-slot:activator>
+          <v-list-item-content>
+            <v-list-item-title v-text="recordings[0].course_name"></v-list-item-title>
           </v-list-item-content>
+        </template>
+
+        <v-list-item
+          v-for="(item, index) in recordings"
+          :key="index"
+        >
+          <v-list-item-content>
+            <v-list-item-title v-text="item.student_name"></v-list-item-title>
+            <v-list-item-subtitle v-text="getTime(item)"></v-list-item-subtitle>
+          </v-list-item-content>
+          <v-spacer></v-spacer>
+          <v-list-item-action>
+            <v-btn v-if="isTutor">
+              Grade
+              <v-icon right color="red lighten-1">mdi-marker</v-icon>
+            </v-btn>
+            <v-btn v-else>
+              View
+              <v-icon right color="green lighten-1">mdi-eye</v-icon>
+            </v-btn>
+          </v-list-item-action>
         </v-list-item>
-      </v-list-item-group>
+      </v-list-group>
     </v-list>
   </v-card>
-  </v-container>
 </template>
 
 <script>
 import store from "../store/store"
 import RecordingService from "@/services/RecordingService"
+import moment from 'moment'
 
 export default {
   data() {
     return {
     recordings: [],
     isTutor: null,
-    // recordings:[
+    sortedRecordings: [],
+    notifications: 0,
+    // recordings2:[
     //   {
     //     recording_id: '1',
     //     updated_at: '11/12/2020 11:12',
@@ -81,44 +100,51 @@ export default {
 
   methods: {
     getTime(item) {
-      let time = item.updated_at.substring(0, item.updated_at.indexOf(':') + 3);
+      const localTime = new Date(item.updated_at).toLocaleString("en-US", {timeZone: "Asia/Singapore"});
+      const time = moment(localTime).calendar()
       return time;
     },
 
     getMessage(item) {
       if (this.isTutor) {
-        return (`${item.course_name} has a new submission from ${item.student_name}`);
+        return this.truncateString(`${item.course_name} has a new submission from ${item.student_name}`);
       } else {
-        return (`${item.course_name} has new comments from ${item.tutor_name}`);
+        return this.truncateString(`${item.course_name} has new comments from ${item.tutor_name}`);
       }
     },
 
     redirect(item) {
       if (this.isTutor) {
-        window.location.href = `/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`;
+        window.location.href = (`/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`);
       } else {
-        window.location.href = `/feedback/show/${item.course_id}/lesson/${item.lesson_id}`;
+        window.location.href = (`/feedback/show/${item.course_id}/lesson/${item.lesson_id}`);
+        RecordingService.markAsRead(item.recording_id)
+        this.$store.dispatch('clearOneNotification')
       }
-      RecordingService.markAsRead(item.recording_id)
-    }
+    },
   },
-  async created() {
-    this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
-    this.recordings.sort((x, y) => y.updated_at < x.updated_at);
-
-    this.isTutor = store.state.user.isTutor;
-    console.log(this.recordings)
-    // console.log(store.state.user)
-  }
     
+    async created() {
+      this.isTutor = store.state.user.isTutor;
+      this.notifications = store.state.notifications;
+      if (this.isTutor) {
+        this.recordings = (await RecordingService.getUncommentedRecordings()).data.recordings;
+      } else {
+        this.recordings = (await RecordingService.getUnreadComments()).data.recordings;
+      }
+
+      const groupBy = (xs, key) => {
+        return xs.reduce(function(rv, x) {
+          (rv[x[key]] = rv[x[key]] || []).push(x);
+          return rv;
+        }, {});
+      }
+      // console.log(this.recordings);
+      this.sortedRecordings = groupBy(this.recordings, 'course_id')
+    }
   }
 </script>
 
 <style scoped>
-
-
-.comment {
-  font-weight: bold;
-}
 
 </style>

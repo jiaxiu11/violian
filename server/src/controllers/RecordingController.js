@@ -133,6 +133,7 @@ module.exports = {
   async list(req, res) {
     try {
       const { eid } = req.query;
+      const user = req.user;
       const exercise = await Exercise.findOne({
         where: {
           id: eid,
@@ -155,7 +156,8 @@ module.exports = {
 
       const recordingsJson = [];
       recordings.forEach((recording) => {
-        recordingsJson.push(recording.toJSON());
+        if (recording.UserId == user.id || !user.isStudent)
+          recordingsJson.push(recording.toJSON());
       });
       res.send({
         recordings: recordingsJson,
@@ -244,7 +246,7 @@ module.exports = {
     try {
       await sequelize.transaction(async (t) => {
         const { rid } = req.query;
-        const { transcription } = req.body
+        const { transcription, overallComment } = req.body
         const recording = await Recording.findOne({
           where: {
             id: rid,
@@ -257,6 +259,9 @@ module.exports = {
           });
         }
         recording.transcription = transcription;
+        if (overallComment) {
+          recording.overallComment = overallComment;
+        }
 
         await Recording.update(recording.dataValues, {
           where: {

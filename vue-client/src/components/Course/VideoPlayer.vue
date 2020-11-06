@@ -179,6 +179,7 @@ export default {
         canEdit: false,
         numberOfStaves: 2,
         lessStaveHeight: true,
+        timeSignature: this.timeSignature,
         canvasProperties: {
           id: `video-vexflow-wrapper` + "-canvas",
           width: this.$refs.videoPlayer.offsetWidth,
