@@ -16,7 +16,7 @@
     v-else
   >
     <v-toolbar
-      color="teal"
+      color="indigo"
       dark
     >
       <v-app-bar-nav-icon></v-app-bar-nav-icon>
@@ -33,7 +33,7 @@
       >
         <template v-slot:activator>
           <v-list-item-content>
-            <v-list-item-title v-text="recordings[0].course_name"></v-list-item-title>
+            <v-list-item-title class="courseName" v-text="recordings[0].course_name"></v-list-item-title>
           </v-list-item-content>
         </template>
 
@@ -47,11 +47,11 @@
           </v-list-item-content>
           <v-spacer></v-spacer>
           <v-list-item-action>
-            <v-btn v-if="isTutor">
+            <v-btn @click="redirect(item)" v-if="isTutor">
               Grade
               <v-icon right color="red lighten-1">mdi-marker</v-icon>
             </v-btn>
-            <v-btn v-else>
+            <v-btn @click="redirect(item)" v-else>
               View
               <v-icon right color="green lighten-1">mdi-eye</v-icon>
             </v-btn>
@@ -146,5 +146,8 @@ export default {
 </script>
 
 <style scoped>
-
+.courseName {
+  font-size: 20px;
+  font-weight: bold;
+}
 </style>

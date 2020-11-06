@@ -111,7 +111,7 @@
             v-row
               v-col.py-0.px-0
                 h2.pl-0.pb-2(style="color: #3c3b37; font-size: 30px;") Course Content
-                div(style="color: #9E9E9E; font-size: 16px;") {{ course.lessons.length }} Lessons &#8226; {{ timeConverted }} of video content
+                div(style="color: #9E9E9E; font-size: 16px;") {{ course.lessons.length }} Lessons
             v-row(align="start")
               v-col.px-0(cols="12")
                 v-card 
