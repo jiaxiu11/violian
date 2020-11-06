@@ -31,15 +31,23 @@
             </v-icon>
           </v-btn>
           <v-chip style="position:absolute; bottom:0; left:calc(50% + 48px);"><strong>{{ formattedElapsedTime }}</strong></v-chip>
-          
-          <v-chip style="position:absolute; bottom:0; left:calc(70%);" v-if="bpmConfirmed" @click="bpmClicked">
+
+          <v-chip style="position:absolute; bottom:0; left:calc(70%);" @click="metronome = !metronome">
+            <v-icon left>
+              mdi-metronome
+            </v-icon>
+            <strong v-if="metronome">ON</strong>
+            <strong v-if="!metronome">OFF</strong>
+          </v-chip>
+
+          <v-chip style="position:absolute; bottom:0; left:calc(70% + 92px);" v-if="bpmConfirmed" @click="bpmClicked">
             <v-icon left>
               mdi-music-note-eighth
             </v-icon>
             <strong>= {{ bpm }}</strong>
           </v-chip>
 
-          <v-chip style="position:absolute; bottom:0; left:calc(70%);" v-else>
+          <v-chip style="position:absolute; bottom:0; left:calc(70% + 92px);" v-else>
             <v-icon left>
               mdi-music-note-eighth
             </v-icon>
@@ -146,6 +154,10 @@
         </score-feedback>
       </v-col>
     </v-row>
+
+    <audio :src="require('../../assets/upbeat.mp3')" ref="upbeat"></audio>
+    <audio :src="require('../../assets/downbeat.mp3')" ref="downbeat"></audio>
+
   </div>
 </template>
 
@@ -194,7 +206,8 @@ export default {
 
       settings: [],
       bpm: this.currEx.bpm,
-      bpmConfirmed: true
+      bpmConfirmed: true,
+      metronome: true
     }
   },
   watch: {
@@ -214,8 +227,11 @@ export default {
       date.setSeconds(this.elapsedTime / 1000);
       const utc = date.toUTCString();
       return utc.substr(utc.indexOf(":") + 1, 5);
-    }
+    },
     
+    msPerBeat() {
+      return (60 / parseInt(this.bpm)) * 1000;
+    }
   },
 
   created() {
@@ -256,6 +272,8 @@ export default {
     },
 
     async bpmClicked () {
+      if (this.isRecording)
+        return
       this.bpmConfirmed = false
       await this.$nextTick()
       this.$refs['bpmInput'].select()
@@ -263,10 +281,19 @@ export default {
 
     countDownTimer() {
         if(this.countDown > 0) {
+          if (this.metronome) {
+            this.$refs['downbeat'].play()
+            setTimeout(() => {
+                this.countDown -= 1
+                this.countDownTimer()
+                this.$refs['downbeat'].play()
+            }, 1000 * 60 / this.bpm)
+          } else {
             setTimeout(() => {
                 this.countDown -= 1
                 this.countDownTimer()
             }, 1000 * 60 / this.bpm)
+          }
         }
 
         if (this.countDown == 0) {
@@ -280,15 +307,28 @@ export default {
     },
 
     startTimer() {
-      this.timer = setInterval(() => {
-        this.elapsedTime += 20;
-        if (this.elapsedTime > this.totalTime) {
-          clearInterval(this.timer);
-          if (this.isRecording) {
-            this.onStop();
+      if (this.metronome) {
+        this.timer = setInterval(() => {
+          this.elapsedTime += 10;
+          if (this.elapsedTime > this.totalTime) {
+            clearInterval(this.timer);
+            if (this.isRecording) {
+              this.onStop();
+            }
           }
-        }
-      }, 20);
+          if (this.elapsedTime % this.msPerBeat == 0) this.$refs['downbeat'].play()
+        }, 10);
+      } else {
+        this.timer = setInterval(() => {
+          this.elapsedTime += 10;
+          if (this.elapsedTime > this.totalTime) {
+            clearInterval(this.timer);
+            if (this.isRecording) {
+              this.onStop();
+            }
+          }
+        }, 10);
+      }
     },
 
     stopTimer() {
