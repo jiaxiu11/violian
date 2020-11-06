@@ -28,8 +28,7 @@
             name="password" 
             prepend-icon="mdi-lock" 
             type="password" 
-            v-model="password" 
-            :rules="passwordRules")
+            v-model="password")
 
           v-text-field(
             label="Password Confirmation" 
@@ -68,10 +67,6 @@ export default {
         v => /.+@.+\..+/.test(v) || "E-mail must be valid"
       ],
       password: "",
-      passwordRules: [
-        v => !!v || "Password is required",
-        v => new RegExp("^[a-zA-Z0-9]{8,32}$").test(v) || "Password must be alphanumeric characters and of length 8 - 32",
-      ],
       passwordConfirmation: "",
       passwordConfirmationRules: [
         v => !!v || "Password confirmation is required",
