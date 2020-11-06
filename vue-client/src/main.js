@@ -3,10 +3,18 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store/store";
 import vuetify from "./plugins/vuetify";
-import Panel from "@/components/Globals/Panel"
+import Panel from "@/components/Globals/Panel";
+import VueAnalytics from "vue-analytics";
 
 Vue.config.productionTip = false;
-Vue.component('panel', Panel)
+if (process.env.NODE_ENV !== "development") {
+  Vue.use(VueAnalytics, {
+    id: "UA-178632955-2",
+    router
+  });
+}
+
+Vue.component("panel", Panel);
 
 new Vue({
   router,
