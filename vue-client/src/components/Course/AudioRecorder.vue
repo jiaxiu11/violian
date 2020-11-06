@@ -31,19 +31,29 @@
             </v-icon>
           </v-btn>
           <v-chip style="position:absolute; bottom:0; left:calc(50% + 48px);"><strong>{{ formattedElapsedTime }}</strong></v-chip>
-          <v-chip style="position:absolute; bottom:0; left:calc(70%);">
+
+          <v-chip style="position:absolute; bottom:0; left:calc(70%);" @click="metronome = !metronome">
+            <v-icon left>
+              mdi-metronome
+            </v-icon>
+            <strong v-if="metronome">ON</strong>
+            <strong v-if="!metronome">OFF</strong>
+          </v-chip>
+
+          <v-chip style="position:absolute; bottom:0; left:calc(70% + 92px);" v-if="bpmConfirmed" @click="bpmClicked">
             <v-icon left>
               mdi-music-note-eighth
             </v-icon>
-            <strong>= {{ currEx.bpm }}</strong>
+            <strong>= {{ bpm }}</strong>
           </v-chip>
-          <!-- <v-chip style="position:absolute; bottom:0; left:calc(70%);">
+
+          <v-chip style="position:absolute; bottom:0; left:calc(70% + 92px);" v-else>
             <v-icon left>
               mdi-music-note-eighth
             </v-icon>
             <strong>=</strong>
-            <input type="text" name="fname" v-model="bpm" @keyup.enter="alert('enter pressed')">
-          </v-chip> -->
+            <input ref="bpmInput" type="text" name="fname" v-model="bpm" v-on:keyup="keyPressed" v-click-outside="onClickOutside">
+          </v-chip>
         </div>
 
         <v-divider class="my-4" v-show="showSubmit"></v-divider>
@@ -140,10 +150,14 @@
     </div> -->
     <v-row>
       <v-col cols="12">
-        <score-feedback :currEx="currEx" :isNewRecording="true" :elapsedTime="elapsedTime/1000" :start="start">
+        <score-feedback :currEx="currEx" :isNewRecording="true" :elapsedTime="elapsedTime/1000" :start="start" :bpm="bpm">
         </score-feedback>
       </v-col>
     </v-row>
+
+    <audio :src="require('../../assets/upbeat.mp3')" ref="upbeat"></audio>
+    <audio :src="require('../../assets/downbeat.mp3')" ref="downbeat"></audio>
+
   </div>
 </template>
 
@@ -191,15 +205,17 @@ export default {
       totalTime: 0,
 
       settings: [],
-      bpm:0
+      bpm: this.currEx.bpm,
+      bpmConfirmed: true,
+      metronome: true
     }
   },
   watch: {
-    // dialog (val) {
-    //   if (!val) return
-
-    //   setTimeout(() => (this.dialog = false), 1000)
-    // },
+    bpm: function (val) {
+      if (typeof val == "number") {
+        this.totalTime = this.countDown * 1000 * 60 / val * this.currEx.numberOfBars
+      }
+    },
   },
   computed: {
     showSubmit() {
@@ -211,8 +227,11 @@ export default {
       date.setSeconds(this.elapsedTime / 1000);
       const utc = date.toUTCString();
       return utc.substr(utc.indexOf(":") + 1, 5);
-    }
+    },
     
+    msPerBeat() {
+      return (60 / parseInt(this.bpm)) * 1000;
+    }
   },
 
   created() {
@@ -226,23 +245,58 @@ export default {
   },
 
   methods: {
+    keyPressed (e) {
+      if (e.code == "Enter") {
+        this.bpmConfirmed = true
+        let bpm = parseInt(this.bpm)
+        if (bpm >= 30 && bpm <= 180) {
+          this.bpm = bpm
+        } else if (bpm < 30) {
+          this.bpm = 30
+        } else {
+          this.bpm = 180
+        }
+      }
+    },
+
+    onClickOutside () {
+      this.bpmConfirmed = true
+      let bpm = parseInt(this.bpm)
+      if (bpm >= 30 && bpm <= 180) {
+        this.bpm = bpm
+      } else if (bpm < 30) {
+        this.bpm = 30
+      } else {
+        this.bpm = 180
+      }
+    },
+
+    async bpmClicked () {
+      if (this.isRecording)
+        return
+      this.bpmConfirmed = false
+      await this.$nextTick()
+      this.$refs['bpmInput'].select()
+    },
+
     countDownTimer() {
         if(this.countDown > 0) {
+          if (this.metronome) {
+            this.$refs['downbeat'].play()
             setTimeout(() => {
                 this.countDown -= 1
                 this.countDownTimer()
-            }, 1000 * 60 / this.currEx.bpm)
+                this.$refs['downbeat'].play()
+            }, 1000 * 60 / this.bpm)
+          } else {
+            setTimeout(() => {
+                this.countDown -= 1
+                this.countDownTimer()
+            }, 1000 * 60 / this.bpm)
+          }
         }
 
         if (this.countDown == 0) {
-          // const record = document.getElementById('recButton');
-          // if (record.classList.contains('notRec')) {
-          //   record.classList.remove('notRec');
-          //   record.classList.add('Rec');
-          // } else {
-          //   record.classList.add('notRec');
-          //   record.classList.remove('Rec');
-          // }
           if (!this.isRecording) {
             this.onStart()
             this.isRecording = true;
@@ -253,15 +307,28 @@ export default {
     },
 
     startTimer() {
-      this.timer = setInterval(() => {
-        this.elapsedTime += 20;
-        if (this.elapsedTime > this.totalTime) {
-          clearInterval(this.timer);
-          if (this.isRecording) {
-            this.onStop();
+      if (this.metronome) {
+        this.timer = setInterval(() => {
+          this.elapsedTime += 10;
+          if (this.elapsedTime > this.totalTime) {
+            clearInterval(this.timer);
+            if (this.isRecording) {
+              this.onStop();
+            }
           }
-        }
-      }, 20);
+          if (this.elapsedTime % this.msPerBeat == 0) this.$refs['downbeat'].play()
+        }, 10);
+      } else {
+        this.timer = setInterval(() => {
+          this.elapsedTime += 10;
+          if (this.elapsedTime > this.totalTime) {
+            clearInterval(this.timer);
+            if (this.isRecording) {
+              this.onStop();
+            }
+          }
+        }, 10);
+      }
     },
 
     stopTimer() {
@@ -270,6 +337,11 @@ export default {
     },
 
     onClick(e) {
+      if (!this.bpmConfirmed) {
+        alert('Please choose a bpm to record with')
+        return
+      }
+
       if (!this.isRecording && !this.hasCountDownStarted) {
         this.countDownTimer();
         this.hasCountDownStarted = true;

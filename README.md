@@ -14,7 +14,7 @@
 ## courses
 - course management
   - GET `/course/list?uid=` - `{ courses: [<courseObj>] }`
-  - GET `/course/listall?search=` - `{ courses: [<courseObj>] }`
+  - GET `/course/listall?search=&instrument=` - `{ courses: [<courseObj>] }`
   - GET `/course/show?cid=` - `{ course: <courseObj> } gets detailed course obj including lessons`
   - POST `/course/new { name, price, description, langauge, level, instrument,  TutorId }` - `{ course: <courseObj> }`
   - PUT `/course/edit { courseObj }` - `{ course: <courseObj> }`
@@ -41,7 +41,7 @@
   - GET `/recording/list?eid=` - `{ recordings: [<recordingObj>] }`
   - DELETE `/recording/del?rid=` - `{ data: ok }`
   - GET `/recording/get-notes?rid=` - `{ recording: [<recordingObj>] }`
-  - POST `/recording/update-notes?rid= { transcription }` - `{ recording: [<recordingObj>] }`
+  - POST `/recording/update-notes?rid= { transcription, overallComment }` - `{ recording: [<recordingObj>] }`
   - POST `/recording/mark-commented?rid=` - `{ recording: [<recordingObj>] }`
   - POST `/recording/mark-read?rid=` - `{ recording: [<recordingObj>] }`
   - GET `/recording/get-uncommented-recordings` - `{ recordings: [{ recording_id, updated_at, exercise_id, lesson_id, course_id, course_name, student_name, tutor_name }]}`
