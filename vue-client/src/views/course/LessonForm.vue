@@ -62,7 +62,19 @@ v-container
                       div.text-h5.mt-6 Score
                       v-row
                         v-col(cols="12" md="6")
-                          v-switch.ma-0(v-model="exercise.useScore" :label="`Overlay score on your video`" color="indigo" dense hide-details)
+                          v-row.align-center
+                            v-switch.ma-0(v-model="exercise.useScore" :label="`Overlay score on your video`" color="indigo" dense hide-details)
+                            v-tooltip.ml-2(right color="#FFFFFF")
+                              template(v-slot:activator="{ on, attrs }")
+                                v-btn(icon color="indigo lighten-2" v-bind="attrs" v-on="on")
+                                  v-icon mdi-information-outline
+                              div
+                                v-card
+                                  v-card-title Show score together with the demo of your exercise
+                                  v-card-subtitle Example exercise with score overlay
+                                  v-card-text.justify-center
+                                    v-img(max-height="320" max-width="500" :src="require('../../assets/score-overlay-demo.png')")
+
                         v-col.py-0(cols="12" md="6" v-if="exercise.useScore")
                             v-text-field(label='Demo Start Time' v-model='exercise.demoStartTime' color="indigo" prepend-icon="mdi-alarm" persistent-hint hint="At roughly which second did you start playing in demo video" :rules="demoStartTimeRules")
                       div.text-h6.mt-3 Input score
@@ -75,6 +87,17 @@ v-container
                           v-col.pt-0(cols="12" md="6")
                             div.pl-0 No. Bars:   {{ exercise.numberOfBars }}
                             v-slider(v-model='exercise.numberOfBars' min='0' max='16' thumb-label :thumb-size="24" @change="changeBars($event, exerciseIdx)" color="indigo" track-color="indigo lighten-3" hide-details)
+                        v-row.align-center
+                            span.text-subtitle-1.ml-3 Tips on score editing
+                            v-tooltip.ml-2(right)
+                                template(v-slot:activator="{ on, attrs }")
+                                    v-btn(icon v-bind="attrs" v-on="on")
+                                        v-icon mdi-help-circle-outline
+                                div
+                                    ul
+                                        li Mouse over the score, click to enter note
+                                        li Scroll up and down to change type of note
+                                        li Right click on any note to open up menu
                         v-row
                           v-col.pa-0(:id="`pannel-content-${exerciseIdx}`" @click="changeMelody($event, exerciseIdx)")
                       div(v-show="exercise.useXml && exercise.useScore")
