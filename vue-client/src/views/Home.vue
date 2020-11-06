@@ -171,7 +171,7 @@ export default {
       if (this.coursesInCategory[this.popularCourses[i].instrument] == undefined) {
         this.$set(this.coursesInCategory, this.popularCourses[i].instrument, [this.popularCourses[i]])
       } else {
-        this.$set(this.coursesInCategory, this.popularCourses[i].instrument, this.popularCourses[i].instrument.concat(this.popularCourses[i]))
+        this.$set(this.coursesInCategory, this.popularCourses[i].instrument, this.coursesInCategory[this.popularCourses[i].instrument].concat(this.popularCourses[i]))
       }
     }
   }
