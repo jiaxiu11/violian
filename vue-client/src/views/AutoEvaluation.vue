@@ -14,7 +14,7 @@
           :shouldIndicateNoteClicked="true"
         )
         v-row(v-if="selectedIndex !== null" justify="center" :style="{position:'absolute',left:commentButtonX+'px',top:commentButtonY+'px'}")
-          v-dialog(v-model="commentDialog" persistent max-width="600px")
+          v-dialog(v-model="commentDialog" max-width="600px")
             template(v-slot:activator="{ on, attrs }")
               v-btn(icon medium elevation="2" v-bind="attrs" v-on="on")
                 v-icon mdi-pencil
@@ -90,7 +90,7 @@ export default {
         let leftOffset = scoresAndLineGraphs.getBoundingClientRect().left - 18
         this.commentButtonX = left + leftOffset;
         let yInterval = 137 + 150;
-        this.commentButtonY = (rowNum - 1) * yInterval + 150;
+        this.commentButtonY = (rowNum - 1) * yInterval + 170;
       }
     },
     async onCommentChange() {
