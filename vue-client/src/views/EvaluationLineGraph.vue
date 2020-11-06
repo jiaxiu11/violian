@@ -107,7 +107,9 @@ export default {
       let idx = data.points[0].pointIndex;
       if (this.shouldIndicateNoteClicked) {
         this.clickedNote = this.transcribedNotes[idx];
-        this.onClickNote(this.rowNum, idx);
+          let xaxis = data.points[0].xaxis;
+          let left = xaxis.l2p(this.transcribedNotes[idx].onset) + xaxis._offset;
+        this.onClickNote(this.rowNum, idx, left);
       }
       //fire event for green tick
       // FYI: to get x-position from x-coord, use the method below
