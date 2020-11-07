@@ -180,6 +180,7 @@ export default {
       if (this.newAudio) {
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
+        formData.set('bpm', this.currEx.bpm)
         formData.append('audio', this.newAudio)
         this.loading = true
         try {

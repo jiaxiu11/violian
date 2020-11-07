@@ -10,7 +10,7 @@
           line-graph(v-if="transcribedNotes.length > 0"
             :transcribedNotes="transcribedNotes[idx]"
             :rowNum="idx + 1"
-            :bpm="currEx.bpm"
+            :bpm="recording.bpm"
             :timeSignature="currEx.timeSignature"
             :barsPerRow="4"
             :onSelectNoteForGreentick="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
@@ -427,7 +427,8 @@ export default {
     },
     
     splitFeedbackIntoRows(notes) {
-      let timePerRow = (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
+      let bpm = this.recording.bpm
+      let timePerRow = (60 / bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
 
       let newRowStartTime = 0;
       let rows = [];
