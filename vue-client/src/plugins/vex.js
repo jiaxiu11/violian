@@ -33,6 +33,7 @@ Vex.UI.Handler = function (containerId, options, DOMNode){
 		stavesPerRow: 2,
 		lessStaveHeight: false,
 		timeSignature: "4/4",
+		keySignature: "C",
 		canvasProperties: {
 			id: containerId + "-canvas",
 			width: window.innerWidth * 0.9,
@@ -107,7 +108,7 @@ Vex.UI.Handler.prototype.createStaves = function() {
 			xPosition += widthOfStave
 		}
 		if (i % this.options.stavesPerRow == 0) {
-			stave.addClef("treble").addTimeSignature(this.options.timeSignature);
+			stave.addClef("treble").addTimeSignature(this.options.timeSignature).addKeySignature(this.options.keySignature);
 		}
 		stave.font = {
 			family: 'sans-serif',
@@ -217,9 +218,11 @@ Vex.UI.Handler.prototype.redrawStave = function(stave){
 
 Vex.UI.Handler.prototype.drawStaves = function(stave){
 	if (stave) {
+		stave.format();
 		stave.draw();
 	} else {
 		for(var i = 0; i < this.staveList.length; i++){
+			this.staveList[i].format();
 			this.staveList[i].draw();
 		}
 	}
@@ -2124,6 +2127,7 @@ Vex.UI.validateScore = function (notesInBars, timeSignature) {
 		}
 
 		if (accumDuration != barDuration) {
+			console.log(i)
 			return false
 		}
 	}
@@ -2357,6 +2361,15 @@ Vex.UI.Handler.prototype.setTimeSignature = function(timeSignature) {
 			this.staveList[i].setTimeSignature(timeSignature);
 	}
 	this.options.timeSignature = timeSignature;
+	this.redraw();
+};
+
+Vex.UI.Handler.prototype.setKeySignature = function(keySignature) {
+	for(var i = 0; i < this.staveList.length; i++){
+		if ((i + 1) % 2 == 1) 
+			this.staveList[i].setKeySignature(keySignature);
+	}
+	this.options.keySignature = keySignature;
 	this.redraw();
 };
 

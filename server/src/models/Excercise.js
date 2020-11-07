@@ -21,7 +21,8 @@ module.exports = (sequelize, DataTypes) => {
     musicXmlUrl: DataTypes.STRING,
     videoFilename: DataTypes.STRING,
     videoPosterFilename: DataTypes.STRING,
-    musicXmlFilename: DataTypes.STRING
+    musicXmlFilename: DataTypes.STRING,
+    keySignature: DataTypes.STRING
   })
 
   Exercise.associate = function (models) {
