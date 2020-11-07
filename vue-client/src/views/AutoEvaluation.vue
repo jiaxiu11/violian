@@ -21,7 +21,7 @@
             v-card
               v-card-title
                 span(class="headline") Comment on a note
-              v-card-subtitle.mt-2(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}
+              v-card-subtitle.mt-2(v-if="selectedIndex !== null") Selected note: {{notesByRow[selectedRowNum-1][selectedIndex].note}}, onset: {{notesByRow[selectedRowNum-1][selectedIndex].onset}}s, duration: {{notesByRow[selectedRowNum-1][selectedIndex].duration}}s
               v-card-text
                 v-container
                   v-row
@@ -86,8 +86,10 @@ export default {
         this.selectedRowNum = rowNum;
         this.comment = this.notesByRow[rowNum - 1][noteIndex].comment ?? null;
 
-        let scoresAndLineGraphs = document.getElementById('scoresAndLineGraphs');
-        let leftOffset = scoresAndLineGraphs.getBoundingClientRect().left - 18
+        let scoresAndLineGraphs = document.getElementById(
+          "scoresAndLineGraphs"
+        );
+        let leftOffset = scoresAndLineGraphs.getBoundingClientRect().left - 18;
         this.commentButtonX = left + leftOffset;
         let yInterval = 137 + 150;
         this.commentButtonY = (rowNum - 1) * yInterval + 170;
@@ -125,8 +127,8 @@ export default {
       this.recording = newRecording;
     },
     splitTranscriptionIntoRows(notes) {
-      let timePerRow =
-        (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
+      let bpm = this.recording.bpm;
+      let timePerRow = (60 / bpm) * parseInt(this.currEx.timeSignature[0]) * 4;
 
       let newRowStartTime = 0;
       let rows = [];
