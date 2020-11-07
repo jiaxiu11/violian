@@ -19,7 +19,8 @@ module.exports = (sequelize, DataTypes) => {
     isRead: {
       type: DataTypes.BOOLEAN,
       defaultValue: 0
-    }
+    },
+    bpm: DataTypes.INTEGER
   })
 
   Recording.associate = function (models) {
