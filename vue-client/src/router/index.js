@@ -19,10 +19,11 @@ import ShowLesson from "../components/Course/ShowLesson"
 import CourseForm from "../views/course/CourseForm"
 import LessonForm from "../views/course/LessonForm"
 import MpegDash from "../components/MpegDash"
-import AutoEvaluation from "../views/AutoEvaluation";
-import ShowFeedback from "../views/course/ShowFeedback";
-import NewRecording from "../views/course/NewRecording";
+import AutoEvaluation from "../views/AutoEvaluation"
+import ShowFeedback from "../views/course/ShowFeedback"
+import NewRecording from "../views/course/NewRecording"
 import Notification from "../views/Notification"
+import CourseList from "../views/course/CourseList"
 
 Vue.use(VueRouter);
 
@@ -91,6 +92,11 @@ const routes = [
     path: '/course/index',
     name: 'courseindex',
     component: CourseIndex
+  },
+  {
+    path: '/course/list/:instrument',
+    name: 'courselist',
+    component: CourseList
   },
   {
     path: '/course/new/',

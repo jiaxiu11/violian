@@ -6,7 +6,7 @@
           div.font-weight-bold(v-if="isShowFeedback && idx == 0") Tutor's recording
           div(:id="`vexflow-wrapper-${idx}`" style="position:relative")
           div.font-weight-bold(v-if="isShowFeedback && idx == 0") Your recording
-          div.font-weight-bold(v-if="isNewFeedback && idx == 0") Student's recording
+          div.font-weight-bold(v-if="isNewFeedback && idx == 0") Student's recording at BPM: {{ recording.bpm }}
           line-graph(v-if="transcribedNotes.length > 0"
             :transcribedNotes="transcribedNotes[idx]"
             :rowNum="idx + 1"
@@ -97,7 +97,7 @@ export default {
   },
   computed: {
     secondsPerRow () {
-      return (60 / this.currEx.bpm) * parseInt(this.currEx.timeSignature.split('/')[0]) * 4;
+      return (60 / this.recording.bpm) * parseInt(this.currEx.timeSignature.split('/')[0]) * 4;
     }
   },
   data () {
@@ -136,6 +136,8 @@ export default {
   watch: {
     recording: function (val) {
       this.transcribedNotes = this.splitFeedbackIntoRows(JSON.parse(val.transcription));
+      this.tutorAudioEnd()
+      this.studentAudioEnd()
     },
 
     start: function (val) {
@@ -384,7 +386,7 @@ export default {
     studentAudioEnd () {
       this.playing = false
       this.transformXStudent = 30
-      this.transformYStudent = 10
+      this.transformYStudent = 30
       cancelAnimationFrame(this.animationFrame)
       this.activeRowStudent = 1
     },

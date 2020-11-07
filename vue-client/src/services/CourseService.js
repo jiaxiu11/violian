@@ -9,9 +9,13 @@ export default {
     return Api().get(`course/list?uid=${userId}`)
   },
 
-  listAll (value) {
-    if (value) {
-      return Api().get(`course/listall?search=${value}`)
+  listAll (search, instrument) {
+    if (search && instrument) {
+      return Api().get(`course/listall?search=${search}&instrument=${instrument}`)
+    } else if (search && !instrument) {
+      return Api().get(`course/listall?search=${search}`)
+    } else if (!search && instrument) {
+      return Api().get(`course/listall?&instrument=${instrument}`)
     } else {
       return Api().get(`course/listall`)
     }

@@ -4,6 +4,7 @@
 
     v-main
       router-view
+      notifications(group="foo" position="bottom center")
 </template>
 
 <script>

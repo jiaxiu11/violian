@@ -242,6 +242,11 @@ export default {
     this.defaultCountDown = this.countDown
 
     this.totalTime = this.countDown * 1000 * 60 / this.currEx.bpm * this.currEx.numberOfBars
+
+    this.$notify({
+      group: 'foo',
+      title: 'Please wear a earpiece if you are using the metronome!',
+    });
   },
 
   methods: {

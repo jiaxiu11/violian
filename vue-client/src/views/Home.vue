@@ -32,7 +32,7 @@
               v-btn(color='indigo' text @click="go_to_course($event, course.id, course.lessons[0].id)")
                 | Continue Learning
         v-col.text-left(cols="12")
-          v-btn(color='indigo' text @click="$router.push('/course/index')") See All
+          v-btn(color='indigo' dark @click="$router.push('/course/index')") See All
             v-icon(right dark size="20") mdi-arrow-right
 
       v-row.mt-10(v-if="!is_student && tutorCourses.length > 0")
@@ -57,6 +57,9 @@
             v-card-actions
               v-btn(color='indigo' text @click="go_to_course($event, course.id)")
                 | Find out more
+        v-col.text-left(cols="12")
+          v-btn(color='indigo' dark @click="$router.push(`/course/list/${courseEntry[0]}`)") See All
+            v-icon(right dark size="20") mdi-arrow-right
 </template>
 
 <script>

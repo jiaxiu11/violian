@@ -51,7 +51,11 @@
               Grade
               <v-icon right color="red lighten-1">mdi-marker</v-icon>
             </v-btn>
-            <v-btn @click="redirect(item)" v-else>
+            <v-btn @click="destroy(item)" v-if="isTutor && $store.state.user.email == 'wangrunding@gmail.com' ">
+              Delete
+              <v-icon right color="red lighten-1">mdi-trash-can</v-icon>
+            </v-btn>
+            <v-btn @click="redirect(item)" v-if="!isTutor">
               View
               <v-icon right color="green lighten-1">mdi-eye</v-icon>
             </v-btn>
@@ -122,6 +126,14 @@ export default {
         this.$store.dispatch('clearOneNotification')
       }
     },
+
+    async destroy(item) {
+      if (confirm('Are you sure?')) {
+        await RecordingService.delete(item.recording_id)
+        this.$store.dispatch('clearOneNotification')
+        this.$router.go()
+      }
+    }
   },
     
     async created() {
