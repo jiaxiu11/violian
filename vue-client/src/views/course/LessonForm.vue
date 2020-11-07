@@ -63,22 +63,21 @@ v-container
                       div.text-h5.mt-6 Score
                       v-row
                         v-col(cols="12" md="6")
-                          v-row.align-center
-                            v-switch.ma-0(v-model="exercise.useScore" :label="`Overlay score on your video`" color="indigo" dense hide-details)
-                            v-tooltip.ml-2(right color="#FFFFFF")
-                              template(v-slot:activator="{ on, attrs }")
-                                v-btn(icon color="indigo lighten-2" v-bind="attrs" v-on="on")
-                                  v-icon mdi-information-outline
-                              div
-                                v-card
-                                  v-card-title Show score together with the demo of your exercise
-                                  v-card-subtitle Example exercise with score overlay
-                                  v-card-text.justify-center
-                                    v-img(max-height="320" max-width="500" :src="require('../../assets/score-overlay-demo.png')")
+                          v-row.align-center.pl-3
+                              v-switch.ma-0(v-model="exercise.useScore" :label="`Overlay score on your video`" color="indigo" dense hide-details)
+                              v-tooltip.ml-2(right color="#FFFFFF")
+                                template(v-slot:activator="{ on, attrs }")
+                                  v-btn(icon color="indigo lighten-2" v-bind="attrs" v-on="on")
+                                    v-icon mdi-information-outline
+                                div
+                                  v-card
+                                    v-card-title Show score together with the demo of your exercise
+                                    v-card-subtitle Example exercise with score overlay
+                                    v-card-text.justify-center
+                                      v-img(max-height="320" max-width="500" :src="require('../../assets/score-overlay-demo.png')")
 
                         v-col.py-0(cols="12" md="6" v-if="exercise.useScore")
                             v-text-field(label='Demo Start Time' v-model='exercise.demoStartTime' color="indigo" prepend-icon="mdi-alarm" persistent-hint hint="At roughly which second did you start playing in demo video" :rules="demoStartTimeRules")
-                      div.text-h6.mt-3 Input score
                       div(v-show="!exercise.useXml && exercise.useScore")
                         v-row
                           v-col(cols="12" md="6")
@@ -87,7 +86,9 @@ v-container
                             v-select(dense :items="time_signatures" outlined v-model="exercise.timeSignature" label='Time Signature' @change="changeTimeSignature($event, exerciseIdx)" color="indigo")
                           v-col.pt-0(cols="12" md="6")
                             div.pl-0 No. Bars:   {{ exercise.numberOfBars }}
-                            v-slider(v-model='exercise.numberOfBars' min='0' max='16' thumb-label :thumb-size="24" @change="changeBars($event, exerciseIdx)" color="indigo" track-color="indigo lighten-3" hide-details)
+                            v-slider(v-model='exercise.numberOfBars' min='0' max='64' thumb-label :thumb-size="24" @change="changeBars($event, exerciseIdx)" color="indigo" track-color="indigo lighten-3" hide-details)
+                          v-col.pt-0(cols="12" md="6")
+                            v-select(dense :items="majorKeys" outlined v-model="exercise.keySignature" label='Key Signature' @change="changeKeySignature($event, exerciseIdx)" color="indigo")
                         v-row.align-center
                             span.text-subtitle-1.ml-3 Tips on score editing
                             v-tooltip.ml-2(right)
@@ -157,6 +158,7 @@ export default {
           musicXml: null,
           musicXmlFilename: '',
           handler: null,
+          keySignature: "C"
         }]
       },
       lesson: null,
@@ -197,7 +199,8 @@ export default {
       uuid: 0,
 
       // expansion panel
-      openedExercise: [0]
+      openedExercise: [0],
+      majorKeys: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb','G','D','A','E','B','F#','C#'],
     }
   },
 
@@ -240,6 +243,10 @@ export default {
       this.newLesson.exercises[exerciseIdx].handler.setTimeSignature(this.newLesson.exercises[exerciseIdx].timeSignature)
     },
 
+    changeKeySignature (event, exerciseIdx) {
+      this.newLesson.exercises[exerciseIdx].handler.setKeySignature(this.newLesson.exercises[exerciseIdx].keySignature)
+    },
+
     changeBars (event, exerciseIdx) {
       this.newLesson.exercises[exerciseIdx].handler.changeNumberOfBars(this.newLesson.exercises[exerciseIdx].numberOfBars, this.newLesson.exercises[exerciseIdx].handler.exportNotes())
     },
@@ -248,7 +255,7 @@ export default {
       this.newLesson.exercises[exerciseIdx].melody = this.newLesson.exercises[exerciseIdx].handler.exportNotes()
     },
 
-    validateMelody(notesInBars, timeSignature) {
+    validateScore(notesInBars, timeSignature) {
       return vexUI.validateScore(notesInBars, timeSignature)
     },
 
@@ -260,7 +267,7 @@ export default {
 
       console.log(vexUI.notesToBars(tempLesson.exercises[0].melody, tempLesson.exercises[0].timeSignature))
       for (let i = 0; i < tempLesson.exercises.length; i++) {
-        if (!this.validateMelody(vexUI.notesToBars(tempLesson.exercises[i].melody, tempLesson.exercises[i].timeSignature), tempLesson.exercises[i].timeSignature)) {
+        if (!this.validateScore(vexUI.notesToBars(tempLesson.exercises[i].melody, tempLesson.exercises[i].timeSignature), tempLesson.exercises[i].timeSignature)) {
           alert('Note value does not equal to time signature indicated of a bar')
           return
         }
@@ -315,6 +322,7 @@ export default {
         formData.set('numberOfBars', tempLesson.exercises[i].numberOfBars)
         formData.set('demoStartTime', parseInt(tempLesson.exercises[i].demoStartTime))
         formData.set('useScore', tempLesson.exercises[i].useScore)
+        formData.set('keySignature', tempLesson.exercises[i].keySignature)
         if (tempLesson.exercises[i].useScore) {
           if (!tempLesson.exercises[i].useXml) {
             formData.set('useXml', false)
@@ -365,26 +373,6 @@ export default {
       this.$router.push(`/course/edit/${this.lesson.CourseId}`)
     },
 
-    newExercise () {
-      this.newLesson.exercises.push({
-        name: '',
-        video: null,
-        videoFilename: '',
-        videoPoster: null,
-        videoPosterFilename: '',
-        useScore: true,
-        timeSignature: '4/4',
-        bpm: 60,
-        numberOfBars: 4,
-        melody: [],
-        demoStartTime: '',
-        useXml: false,
-        musicXml: null,
-        musicXmlFilename: '',
-        handler: null,
-      })
-    },
-
     deleteExercise (event, exerciseIdx) {
       this.newLesson.exercises.splice(exerciseIdx, 1)
     }
@@ -401,9 +389,6 @@ export default {
       this.newLesson.description = this.lesson.description
       if (this.lesson.Exercises.length > 0) {
         for (var i = 0; i < this.lesson.Exercises.length; i++) {
-          if (!this.newLesson.exercises[i]) {
-            this.newExercise()
-          }
           this.newLesson.exercises[i].id = this.lesson.Exercises[i].id
           this.newLesson.exercises[i].name = this.lesson.Exercises[i].name
           this.newLesson.exercises[i].useScore = this.lesson.Exercises[i].useScore
@@ -416,6 +401,10 @@ export default {
             // if the first exercise uses vexflow, immediately render it
             if (!this.newLesson.exercises[i].useXml && i == 0) {
               this.newLesson.exercises[i].timeSignature = this.lesson.Exercises[i].timeSignature
+              if (!this.lesson.Exercises[i].keySignature) {
+                this.lesson.Exercises[i].keySignature = "C"
+              }
+              this.newLesson.exercises[i].keySignature = this.lesson.Exercises[i].keySignature
               this.newLesson.exercises[i].numberOfBars = this.lesson.Exercises[i].numberOfBars
               this.newLesson.exercises[i].melody = this.lesson.Exercises[i].melody.split('-')
 
@@ -427,6 +416,7 @@ export default {
               this.newLesson.exercises[i].handler = new vexUI.Handler(div.id, {
                 numberOfStaves: this.newLesson.exercises[i].numberOfBars,
                 timeSignature: this.newLesson.exercises[i].timeSignature,
+                keySignature: this.newLesson.exercises[i].keySignature,
                 canvasProperties: {
                   id: div.id + '-canvas',
                   width: pannel.offsetWidth,

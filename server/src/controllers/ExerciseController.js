@@ -73,7 +73,6 @@ module.exports = {
           req.body.videoPosterFilename = req.files['videoPoster'][0].originalname
         }
   
-        console.log(req.body)
         const exercise = await lesson.createExercise(req.body, {
           transaction: t
         })

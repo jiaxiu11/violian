@@ -9,7 +9,8 @@ var sequelize = null
 
 sequelize = new Sequelize({
   dialect: config.db.dialect, 
-  storage: config.db.url
+  storage: config.db.url,
+  logging: false
 })
 // sequelize = new Sequelize(config.db.url)
 
