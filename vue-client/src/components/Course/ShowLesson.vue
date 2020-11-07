@@ -81,9 +81,12 @@
                 v-col(cols="12")
                   h2 Audio upload
               v-row(justify="center")
-                v-col(cols="12")
-                  v-file-input.pr-3(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense accept="audio/*")
-                  v-btn(color="#ec5252" dark @click="submitAudio" style="margin-top: 2px;" :loading="loading") Submit
+                v-form.pa-0(:ref="`audioForm`" style="width: 100%;")
+                  v-col(cols="12")
+                    v-file-input.pr-3(v-model="newAudio" label="Upload audio..." outlined color="indigo" dense accept="audio/*" :rules="requiredRules")
+                  v-col(cols="12")
+                    v-text-field.px-3(dense label='BPM at which you recorded' name='bpm' v-model='bpm' outlined color="indigo" :rules="requiredRules")
+                    v-btn(color="#ec5252" dark @click="submitAudio" style="margin-top: 2px;" :loading="loading") Submit
 
 </template>
 
@@ -112,7 +115,6 @@ export default {
   },
   data () {
     return {
-
       course: null,
       lesson: null,
 
@@ -134,7 +136,12 @@ export default {
       videoSrc: '',
       modal: false,
       newAudio: null,
-      loading: false
+      loading: false,
+
+      bpm: '',
+      requiredRules: [
+        v => !!v || "This field is required"
+      ],
     }
   },
   watch: {
@@ -177,7 +184,7 @@ export default {
     },
 
     async submitAudio (event) {
-      if (this.newAudio) {
+      if (this.$refs['audioForm'].validate()) {
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
         formData.set('bpm', this.currEx.bpm)
@@ -192,9 +199,8 @@ export default {
         } finally {
           this.loading = false
           this.modal = false
+          alert('success!')
         }
-      } else {
-        alert('Please input an audio file to gain feedback')
       }
     },
 

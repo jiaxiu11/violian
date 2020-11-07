@@ -423,6 +423,7 @@ export default {
         const audioURL = window.URL.createObjectURL(blob);
         
         this.recordingsData.push([clipName, audioURL, blob, this.bpm]);
+        this.selectedFileIndex = this.recordingsData.length - 1
       }
 
       mediaRecorder.ondataavailable = (e) => {
