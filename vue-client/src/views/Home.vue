@@ -124,7 +124,7 @@ export default {
         case"lg":
           return 4;
         case"xl":
-          return 4;
+          return 5;
         default:
           return 2;
       }

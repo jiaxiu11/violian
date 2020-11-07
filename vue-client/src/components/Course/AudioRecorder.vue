@@ -68,7 +68,7 @@
 
                 <v-list-item-content class="py-0">
                   <v-list-item-title @click="changeFileName(index)">
-                    {{ recordingData[0] }}
+                    {{ recordingData[0] }}(bpm: {{ recordingData[3] }})
                   </v-list-item-title>
                 </v-list-item-content>
                 <v-list-item-content class="py-0" style="overflow:visible;">
@@ -117,7 +117,7 @@
 
     <v-row v-show="showSubmit">
       <v-col cols="12" class="text-center">
-        <v-btn color="indigo" dark @click="submitAudio" :disabled="dialog" :loading="dialog"> Upload
+        <v-btn color="indigo" dark @click="submitAudio" :loading="dialog"> Upload
           <v-icon right dark> 
             mdi-cloud-upload
           </v-icon>
@@ -368,6 +368,7 @@ export default {
       try {
         let formData = new FormData()
         formData.set('eid', this.currEx.id)
+        formData.set('bpm', this.recordingsData[this.selectedFileIndex][3])
         console.log(this.currEx.id, file)
         formData.append('audio', file);
         let recording = (await RecordingService.create(formData)).data.recording
@@ -416,7 +417,7 @@ export default {
         chunks = [];
         const audioURL = window.URL.createObjectURL(blob);
         
-        this.recordingsData.push([clipName, audioURL, blob]);
+        this.recordingsData.push([clipName, audioURL, blob, this.bpm]);
       }
 
       mediaRecorder.ondataavailable = (e) => {
