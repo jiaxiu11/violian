@@ -14,7 +14,12 @@
             v-list
               v-list-item(v-for='(recording, index) in recordings' :key='index' @click="updateFeedback($event, index)")
                 v-list-item-title {{ recording.audioFilename }}
-      
+
+      v-row(v-if="currRecording&&currRecording.overallComment")
+        v-col.ml-3
+            h4 Overall comment from tutor:
+            div.ml-5 {{currRecording.overallComment}}
+
       v-row
         v-col
           score-feedback(v-if="currEx && currRecording" :currEx="currEx" :isShowFeedback="true" :recording="currRecording")

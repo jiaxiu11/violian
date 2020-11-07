@@ -25,6 +25,7 @@ export default {
   ],
   watch: {
     transcribedNotes: function(val) {
+      this.secondsPerRow = this.getSecondsPerRow();
       this.graph = this.getGraphForNotes(val);
     },
     isScrolling: function(val) {
