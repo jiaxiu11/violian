@@ -8,17 +8,6 @@
 
     <v-row class="main-controls" justify="center">
       <v-col cols="10" class="text-center" style="border: 1px solid #E0E0E0; border-radius:10px;">
-        <!-- <v-row justify="center">
-          <v-col cols="12">
-            <canvas class="visualizer" justify="center" height="60px"></canvas>
-          </v-col>
-        </v-row>
-        <button id="recButton" class="notRec" @click="onClick"></button> -->
-        <!-- <v-btn class="mx-auto px-6 action-button" large @click="onClick"> Record
-          <v-icon right dark size="20" color="red"> 
-            mdi-record-circle-outline
-          </v-icon>
-        </v-btn> -->
         <div style="position:relative;">
           <v-btn fab icon elevation="3" @click="onClick" medium v-if="!isRecording">
             <v-icon large color="#747474">
@@ -90,31 +79,6 @@
       </v-col>
     </v-row>
 
-    <!-- <v-divider v-show="showSubmit"></v-divider>
-
-    <section class="sound-clips">
-      <article class="sound-clip" v-for='(recordingData, index) in recordingsData' :key='index'>
-        <v-row justify="center">
-          <v-col cols="1">
-            <input type="radio" :id='index' :value='index' v-model="selectedFileIndex">
-          </v-col>
-          <v-col cols="2">  
-            <div class="audioName">
-            <v-chip class="ma-2" column=true color="primary" nlabel @click="changeFileName(index)">
-            {{ recordingData[0] }}
-            </v-chip>
-            </div>
-          </v-col>
-          
-          <audio controls :src='recordingData[1]'></audio>
-          <v-btn class="delete" @click="onDelete(recordingData)" color="error">
-            <v-icon>mdi-delete</v-icon>
-          </v-btn>
-        </v-row>
-      </article>
-    </section>
-    <v-divider v-show="showSubmit"></v-divider> -->
-
     <v-row v-show="showSubmit">
       <v-col cols="12" class="text-center">
         <v-btn color="indigo" dark @click="submitAudio" :loading="dialog"> Upload
@@ -129,25 +93,6 @@
       </v-col>
     </v-row>
 
-    <!-- <div class="text-center">
-      <v-dialog
-        v-model="dialog"
-        hide-overlay
-        persistent
-        width="300"
-      >
-        <v-card color="primary" dark>
-          <v-card-text>
-            Uploading recording...
-            <v-progress-linear
-              indeterminate
-              color="white"
-              class="mb-0"
-            ></v-progress-linear>
-          </v-card-text>
-        </v-card>
-      </v-dialog>
-    </div> -->
     <v-row>
       <v-col cols="12">
         <score-feedback :currEx="currEx" :isNewRecording="true" :elapsedTime="elapsedTime/1000" :start="start" :bpm="bpm">
@@ -230,7 +175,7 @@ export default {
     },
     
     msPerBeat() {
-      return (60 / parseInt(this.bpm)) * 1000;
+      return Math.ceil(((60 / parseInt(this.bpm)) * 1000)/10)*10
     }
   },
 
@@ -313,6 +258,7 @@ export default {
 
     startTimer() {
       if (this.metronome) {
+        console.log('here')
         this.timer = setInterval(() => {
           this.elapsedTime += 10;
           if (this.elapsedTime > this.totalTime) {
