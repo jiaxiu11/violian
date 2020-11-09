@@ -23,6 +23,7 @@ export default {
       numberOfBars: null,
       bpm: null,
       timeSignature: null,
+      keySignature: 'C',
       description: '',
       melody: [],
       useScore: false,
@@ -180,6 +181,7 @@ export default {
         numberOfStaves: 2,
         lessStaveHeight: true,
         timeSignature: this.timeSignature,
+        keySignature: this.keySignature,
         canvasProperties: {
           id: `video-vexflow-wrapper` + "-canvas",
           width: this.$refs.videoPlayer.offsetWidth,
@@ -288,6 +290,7 @@ export default {
       } else {
         this.melody = exercise.melody.split('-')
         this.timeSignature = exercise.timeSignature
+        this.keySignature = exercise.keySignature
         this.numberOfBars = parseInt(exercise.numberOfBars)
         this.drawScores()
       }

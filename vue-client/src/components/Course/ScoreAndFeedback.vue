@@ -2,22 +2,25 @@
   v-container
     v-row.justify-center
       v-col.py-0(cols="12")
-        div(v-for="(part, idx) in scoreRows" :key="idx")
+        div(v-for="(part, idx) in scoreRows" :key="idx" style="position:relative")
           div.font-weight-bold(v-if="isShowFeedback && idx == 0") Tutor's recording
           div(:id="`vexflow-wrapper-${idx}`" style="position:relative")
-          div.font-weight-bold(v-if="isShowFeedback && idx == 0") Your recording
-          div.font-weight-bold(v-if="isNewFeedback && idx == 0") Student's recording at BPM: {{ recording.bpm }}
-          line-graph(v-if="transcribedNotes.length > 0"
-            :transcribedNotes="transcribedNotes[idx]"
-            :rowNum="idx + 1"
-            :bpm="recording.bpm"
-            :timeSignature="currEx.timeSignature"
-            :barsPerRow="4"
-            :onSelectNoteForGreentick="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
-            :onClickNote="onClickNote"
-            :clickedNoteOnset="clickedNoteOnset"
-            :shouldIndicateNoteClicked="shouldIndicateNoteClicked"
-          )
+          //- div.font-weight-bold(v-if="isShowFeedback && idx == 0") Your recording
+          //- div.font-weight-bold(v-if="isNewFeedback && idx == 0") Student's recording at BPM: {{ recording.bpm }}
+          div(style="position:relative")
+            line-graph(v-if="transcribedNotes.length > 0"
+              :transcribedNotes="transcribedNotes[idx]"
+              :rowNum="idx + 1"
+              :bpm="recording.bpm"
+              :timeSignature="currEx.timeSignature"
+              :barsPerRow="4"
+              :onSelectNoteForGreentick="(rowNum,left)=>{updateStudentPos(rowNum, left)}"
+              :onClickNote="onClickNote"
+              :clickedNoteOnset="clickedNoteOnset"
+              :shouldIndicateNoteClicked="shouldIndicateNoteClicked"
+              style="position:relative"
+            )
+            div.font-weight-bold(v-if="isShowFeedback && idx == 0" style="position:absolute; top:-10px; left:0;") Your recording
 
     v-btn(@click="play" v-if="!playing && (isNewFeedback || isShowFeedback)" fab large style="position:fixed; top:25vh; right:24px;")
       v-icon(color="indigo") mdi-play
@@ -175,6 +178,7 @@ export default {
           numberOfStaves: 4,
           stavesPerRow: 4,
           canEdit: false,
+          keySignature: this.currEx.keySignature,
           canvasProperties: {
             width,
             id: `vexflow-wrapper-${i}` + "-canvas",
@@ -233,42 +237,6 @@ export default {
       } else {
         this.pauseStudentAudio()
       }
-    },
-
-    recordStart () {
-      // play the audio
-      let animate = () => {
-        let currTime = this.elapsedTime
-        if (currTime > this.demoStartTime) {
-          currTime = currTime - this.demoStartTime
-          let currNoteOnsetDuration = this.noteOnsetDurations[this.activeRow][this.activeNote]
-          if (currTime < currNoteOnsetDuration.onset + currNoteOnsetDuration.duration) {
-            // move within this note
-            let timeFraction = (currTime - currNoteOnsetDuration.onset) / currNoteOnsetDuration.duration;
-            if (this.activeNote == this.scoreRows[this.activeRow].length - 1) {
-              this.transformX = (this.notePositions[this.activeRow][this.activeNote].x + parseFloat((this.canvasWidth - 20 - this.notePositions[this.activeRow][this.activeNote].x) * timeFraction))
-            } else {
-              this.transformX = (this.notePositions[this.activeRow][this.activeNote].x + parseFloat((this.notePositions[this.activeRow][this.activeNote + 1].x - this.notePositions[this.activeRow][this.activeNote].x) * timeFraction))
-            }
-          } else {
-            // move to next note, if needed move to next row
-            // console.log(this.activeRow, this.activeNote)
-            if (this.activeNote == this.scoreRows[this.activeRow].length - 1) {
-              this.activeNote = 0
-              this.activeRow += 1
-              if (this.activeRow < this.notePositions.length)
-                document.getElementById(`vexflow-wrapper-${this.activeRow}`).scrollIntoView(true, {behavior: "smooth"})
-              this.transformY = this.transformY + this.yInterval + 10
-            } else {
-              this.activeNote += 1
-            }
-          }
-        }
-
-        this.animationFrame = requestAnimationFrame(animate);
-      }
-
-      this.animationFrame = requestAnimationFrame(animate);
     },
 
     playTutorAudio () {
@@ -365,7 +333,7 @@ export default {
             cancelAnimationFrame(this.animationFrame)
             return
           }
-          document.getElementById(`lineGraph${this.activeRowStudent - 1}`).scrollIntoView(true, {behavior: "smooth"})
+          document.getElementById(`vexflow-wrapper-${this.activeRowStudent - 1}`).scrollIntoView(true, {behavior: "smooth"})
           this.transformYStudent = this.transformYStudent + this.yInterval
           this.transformXStudent = 30
         }

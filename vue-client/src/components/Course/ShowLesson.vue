@@ -199,7 +199,6 @@ export default {
         } finally {
           this.loading = false
           this.modal = false
-          alert('success!')
         }
       }
     },
