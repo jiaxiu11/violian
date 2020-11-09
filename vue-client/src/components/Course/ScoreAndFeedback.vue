@@ -275,8 +275,8 @@ export default {
               this.activeNote = 0
               this.activeRow += 1
               if (this.activeRow < this.notePositions.length)
-                document.getElementById(`vexflow-wrapper-${this.activeRow}`).scrollIntoView(true, {behavior: "smooth"})
-              this.transformY = this.transformY + this.yInterval + 10
+                document.getElementById(`vexflow-wrapper-${this.activeRow >= 1 ? this.activeRow - 1 : this.activeRow}`).scrollIntoView({behavior: "smooth"})
+              this.transformY = this.transformY + this.yInterval
             } else {
               this.activeNote += 1
             }
@@ -313,6 +313,7 @@ export default {
       this.transformXStudent = left
       this.transformYStudent = (rowNum - 1) * (this.yInterval) + 30
       this.$refs['studentAudio'].currentTime = ((rowNum - 1) + (left - 30) / (this.canvasWidth - 50)) * this.secondsPerRow
+      this.activeRowStudent = rowNum
     },
 
     playStudentAudio (rowNum, left) {
@@ -333,7 +334,7 @@ export default {
             cancelAnimationFrame(this.animationFrame)
             return
           }
-          document.getElementById(`vexflow-wrapper-${this.activeRowStudent - 1}`).scrollIntoView(true, {behavior: "smooth"})
+          document.getElementById(`vexflow-wrapper-${this.activeRowStudent >= 2 ? this.activeRowStudent - 2 : this.activeRowStudent - 1}`).scrollIntoView({behavior: "smooth"})
           this.transformYStudent = this.transformYStudent + this.yInterval
           this.transformXStudent = 30
         }
