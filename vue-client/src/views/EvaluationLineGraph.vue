@@ -135,9 +135,7 @@ export default {
       let xaxis = data.points[0].xaxis;
       let yaxis = data.points[0].yaxis;
       let left = xaxis.l2p(data.points[0].x) + xaxis._offset;
-      let top = yaxis.l2p(data.points[0].y) + lineGraphBoundingRect.top;
-      // use this line and set .tooltip position to fixed if we want the tooltip to be exactly below the note
-      // let top = yaxis.l2p(data.points[0].y) + lineGraphBoundingRect.top + yaxis.l2p(3.1) + yaxis._offset;
+      let top = lineGraphBoundingRect.height - yaxis._offset + 1;
 
       this.selectedNote = this.transcribedNotes[idx];
       this.tooltipLeft = left;
