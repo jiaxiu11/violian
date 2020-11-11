@@ -34,8 +34,8 @@
           v-card
             v-img.white--text.align-end(gradient="to top right, rgba(0,0,0,.5), rgba(0,0,0,.5)" height="200px" :src="course.coverPhotoUrl" @click="playVideo" style="cursor: pointer;")
               div(style="position: absolute; left: 0; top: 0; width: 100%; height: 100%;")
-               img#play-button(:src="require('../../assets/play_button.png')" style="position: absolute; width: 60px; left: calc(50% - 30px); top: calc(50% - 30px); height: 60px;" color="white" size="62" )
-               h3.text--white(style="bottom: 12px; text-align: center; position: absolute; left:0; right:0; text-shadow: 1px 1px 2px #000000;") Preview this course
+               img#play-button(:src="require('../../assets/play_button.png')" style="position: absolute; width: 60px; left: calc(50% - 30px); top: calc(50% - 30px); height: 60px;" color="white" size="62" v-if="course.lessons.length > 0  && course.lessons[0].exercises.length > 0 && course.lessons[0].exercises[0].videoUrl")
+               h3.text--white(style="bottom: 12px; text-align: center; position: absolute; left:0; right:0; text-shadow: 1px 1px 2px #000000;" v-if="course.lessons.length > 0 && course.lessons[0].exercises.length > 0 && course.lessons[0].exercises[0].videoUrl") Preview this course
             v-row
               v-col.text-left
                 h1.pl-5.font-weight-bold(style="font-size: 36px;") S${{ course.price ? course.price.toFixed(2): '0' }}
@@ -137,8 +137,8 @@
 
     v-row(justify='center')
       v-dialog(v-model='dialog' max-width='calc(100vw * 0.8)' v-if="dialog")
-        video(width="100%" height="auto" controls ref="videoPlayer" id='video')
-          source(:src="course.previewVideoUrl" type="video/mp4")
+        video(width="100%" height="auto" controls ref="videoPlayer" id='video' v-if="course.lessons.length > 0  && course.lessons[0].exercises.length > 0 && course.lessons[0].exercises[0].videoUrl")
+          source(:src="course.lessons[0].exercises[0].videoUrl" type="video/mp4")
 
               
 
@@ -204,7 +204,8 @@ export default {
     },
 
     playVideo () {
-      this.dialog = true;
+      if (this.course.lessons.length > 0  && this.course.lessons[0].exercises.length > 0 && this.course.lessons[0].exercises[0].videoUrl)
+        this.dialog = true;
     },
 
     async subscribe () {
