@@ -431,6 +431,16 @@ export default {
           rows.push([])
       }
       return rows;
+    },
+
+    keyPressed (e) {
+      if (e.code == "Space") {
+        if (this.playing) {
+          this.pause()
+        } else {
+          this.play()
+        }
+      }
     }
   },
 
@@ -452,6 +462,16 @@ export default {
     } else if (this.isNewRecording) {
       this.yInterval = 137
       this.drawScore()
+    }
+
+    if (!this.isNewRecording) {
+      window.addEventListener("keyup", this.keyPressed)
+    }
+  },
+
+  destroyed: function () {
+    if (!this.isNewRecording) {
+      window.removeEventListener("keyup", this.keyPressed)
     }
   }
 }
