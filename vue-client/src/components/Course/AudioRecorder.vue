@@ -9,12 +9,12 @@
     <v-row class="main-controls" justify="center">
       <v-col cols="10" class="text-center" style="border: 1px solid #E0E0E0; border-radius:10px;">
         <div style="position:relative;">
-          <v-btn fab icon elevation="3" @click="onClick" medium v-if="!isRecording">
+          <v-btn fab icon elevation="3" @click="startRecording" medium v-if="!isRecording">
             <v-icon large color="#747474">
               mdi-microphone
             </v-icon>
           </v-btn>
-          <v-btn icon color="#C62828" @click="onClick" height="56" width="56" v-if="isRecording">
+          <v-btn icon color="#C62828" @click="stopRecording" height="56" width="56" v-if="isRecording">
             <v-icon size="48">
               mdi-stop-circle
             </v-icon>
@@ -57,7 +57,7 @@
 
                 <v-list-item-content class="py-0">
                   <v-list-item-title @click="changeFileName(index)">
-                    {{ recordingData[0] }}(bpm: {{ recordingData[3] }})
+                    {{ recordingData[0] }}  (bpm: {{ recordingData[3] }})
                   </v-list-item-title>
                 </v-list-item-content>
                 <v-list-item-content class="py-0" style="overflow:visible;">
@@ -100,8 +100,7 @@
       </v-col>
     </v-row>
 
-    <audio :src="require('../../assets/upbeat.mp3')" ref="upbeat"></audio>
-    <audio :src="require('../../assets/downbeat.mp3')" ref="downbeat"></audio>
+    <audio src="../../assets/downbeat.mp3" ref="downbeat"></audio>
 
   </div>
 </template>
@@ -110,6 +109,7 @@
 /* eslint-disable */
 import RecordingService from "@/services/RecordingService"
 import ScoreAndFeedback from "@/components/Course/ScoreAndFeedback"
+import RecordRTC from "recordrtc"
 
 export default {
   name: 'AudioRecorder',
@@ -152,7 +152,13 @@ export default {
       settings: [],
       bpm: this.currEx.bpm,
       bpmConfirmed: true,
-      metronome: true
+      metronome: true,
+
+      // recordRTC
+      recorder: null,
+      microphone: null,
+      disabled: false
+
     }
   },
   watch: {
@@ -176,6 +182,14 @@ export default {
     
     msPerBeat() {
       return Math.ceil(((60 / parseInt(this.bpm)) * 1000)/10)*10
+    },
+
+    isEdge() {
+      return navigator.userAgent.indexOf('Edge') !== -1 && (!!navigator.msSaveOrOpenBlob || !!navigator.msSaveBlob)
+    },
+
+    isSafari() {
+      return /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     }
   },
 
@@ -195,6 +209,100 @@ export default {
   },
 
   methods: {
+    // recording with recordRTC
+    async captureMicrophone(callback) {
+      if(typeof navigator.mediaDevices === 'undefined' || !navigator.mediaDevices.getUserMedia) {
+        alert('This browser does not supports WebRTC getUserMedia API.');
+
+        if(!!navigator.getUserMedia) {
+          alert('This browser seems supporting deprecated getUserMedia API.');
+        }
+      }
+
+      let microphone = await navigator.mediaDevices.getUserMedia({
+        audio: this.isEdge ? true : {
+          echoCancellation: false
+        }
+      })
+
+      this.microphone = microphone
+    },
+
+    async startRecording() {
+      if (!this.bpmConfirmed) {
+        alert('Please choose a bpm to record with')
+        return
+      }
+
+      var audio = document.getElementById('recordrtc-audio')
+      if (!this.microphone) {
+        await this.captureMicrophone()
+      }
+
+      // audio.muted = true;
+      // audio.srcObject = this.microphone;
+
+      var options = {
+          type: 'audio',
+          numberOfAudioChannels: this.isEdge ? 1 : 2,
+          checkForInactiveTracks: true,
+          bufferSize: 16384
+      };
+
+      if(this.isSafari || this.isEdge) {
+          options.recorderType = RecordRTC.StereoAudioRecorder;
+      }
+
+      if(navigator.platform && navigator.platform.toString().toLowerCase().indexOf('win') === -1) {
+          options.sampleRate = 48000; // or 44100 or remove this line for default
+      }
+
+      if(this.isSafari) {
+          options.sampleRate = 44100;
+          options.bufferSize = 4096;
+          options.numberOfAudioChannels = 2;
+      }
+
+      if(this.recorder) {
+        this.recorder.destroy();
+        this.recorder = null;
+      }
+
+      this.recorder = RecordRTC(this.microphone, options);
+
+      if (!this.isRecording && !this.hasCountDownStarted) {
+        this.countDownTimer();
+        this.hasCountDownStarted = true;
+        this.overlay = !this.overlay
+      } 
+      
+      if (this.isRecording) {
+        this.onStop();
+      }
+    },
+
+    stopRecording() {
+      this.recorder.stopRecording(this.stopRecordingCallback)
+    },
+
+    stopRecordingCallback() {
+      this.onStop()
+
+      const clipName = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString()
+      this.isRecording = false;
+      
+      this.recordingsData.push([clipName, URL.createObjectURL(this.recorder.getBlob()), this.recorder.getBlob(), this.bpm]);
+      this.selectedFileIndex = this.recordingsData.length - 1
+
+      if(this.isSafari) {
+        if(this.microphone) {
+          this.microphone.stop();
+          this.microphone = null;
+        }
+      }
+    },
+
+    // bpm adjustment
     keyPressed (e) {
       if (e.code == "Enter") {
         this.bpmConfirmed = true
@@ -229,6 +337,7 @@ export default {
       this.$refs['bpmInput'].select()
     },
 
+    // recording
     countDownTimer() {
         if(this.countDown > 0) {
           if (this.metronome) {
@@ -248,7 +357,9 @@ export default {
 
         if (this.countDown == 0) {
           if (!this.isRecording) {
-            this.onStart()
+            this.recorder.startRecording();
+            this.recorder.microphone = this.microphone;
+            this.startTimer()
             this.isRecording = true;
             this.start = true
             this.overlay = false;
@@ -264,7 +375,7 @@ export default {
           if (this.elapsedTime > this.totalTime) {
             clearInterval(this.timer);
             if (this.isRecording) {
-              this.onStop();
+              this.stopRecording();
             }
           }
           if (this.elapsedTime % this.msPerBeat == 0) this.$refs['downbeat'].play()
@@ -275,7 +386,7 @@ export default {
           if (this.elapsedTime > this.totalTime) {
             clearInterval(this.timer);
             if (this.isRecording) {
-              this.onStop();
+              this.stopRecording();
             }
           }
         }, 10);
@@ -287,23 +398,23 @@ export default {
       clearInterval(this.timer);
     },
 
-    onClick(e) {
-      if (!this.bpmConfirmed) {
-        alert('Please choose a bpm to record with')
-        return
-      }
+    // onClick(e) {
+    //   if (!this.bpmConfirmed) {
+    //     alert('Please choose a bpm to record with')
+    //     return
+    //   }
 
-      if (!this.isRecording && !this.hasCountDownStarted) {
-        this.countDownTimer();
-        this.hasCountDownStarted = true;
-        this.overlay = !this.overlay
-      } 
+    //   if (!this.isRecording && !this.hasCountDownStarted) {
+    //     this.countDownTimer();
+    //     this.hasCountDownStarted = true;
+    //     this.overlay = !this.overlay
+    //   } 
       
-      if (this.isRecording) {
-        this.onStop();
-      }
+    //   if (this.isRecording) {
+    //     this.onStop();
+    //   }
       
-    },
+    // },
 
     async submitAudio() {
       if (this.selectedFileIndex == null) {
@@ -334,18 +445,9 @@ export default {
       }
     },
 
-    onStart() {
-      // this.countDownTimer()
-      this.mediaRecorder.start()
-      this.startTimer()
-      const record = document.getElementById('recButton');
-    },
-
     onStop() {
-      console.log("Recorder state: ", this.mediaRecorder.state);
       this.stopTimer();
       this.start = false;
-      this.mediaRecorder.stop();
       this.countDown = this.defaultCountDown;
       this.hasCountDownStarted = false;
     },
@@ -355,26 +457,26 @@ export default {
     },
 
     onSuccess(stream) {
-      const mediaRecorder = new MediaRecorder(stream);
+      // const mediaRecorder = new MediaRecorder(stream);
 
-      this.mediaRecorder = mediaRecorder;
-      var chunks = [];
-      console.log("Recorder state: ", mediaRecorder.state);
+      // this.mediaRecorder = mediaRecorder;
+      // var chunks = [];
+      // console.log("Recorder state: ", mediaRecorder.state);
 
-      mediaRecorder.onstop = (e) => {
-        const clipName = prompt('Enter a name for your sound clip?','My recording');
-        this.isRecording = false;
-        var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=vorbis' });
-        chunks = [];
-        const audioURL = window.URL.createObjectURL(blob);
+      // mediaRecorder.onstop = (e) => {
+      //   const clipName = prompt('Enter a name for your sound clip?','My recording');
+      //   this.isRecording = false;
+      //   var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=vorbis' });
+      //   chunks = [];
+      //   const audioURL = window.URL.createObjectURL(blob);
         
-        this.recordingsData.push([clipName, audioURL, blob, this.bpm]);
-        this.selectedFileIndex = this.recordingsData.length - 1
-      }
+      //   this.recordingsData.push([clipName, audioURL, blob, this.bpm]);
+      //   this.selectedFileIndex = this.recordingsData.length - 1
+      // }
 
-      mediaRecorder.ondataavailable = (e) => {
-        chunks.push(e.data);
-      }
+      // mediaRecorder.ondataavailable = (e) => {
+      //   chunks.push(e.data);
+      // }
     },
 
     onError(err){

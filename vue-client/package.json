@@ -18,6 +18,7 @@
     "moment": "^2.29.1",
     "opensheetmusicdisplay": "^0.8.6",
     "plotly.js": "^1.57.0",
+    "recordrtc": "^5.6.1",
     "video.js": "^7.8.3",
     "videojs-contrib-dash": "^2.11.0",
     "videojs-hotkeys": "^0.2.27",
