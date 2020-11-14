@@ -34,7 +34,7 @@ def main():
                                                 delta=0.2,
                                                 wait=20)
 
-        onset_boundaries = numpy.concatenate([[0], onset_samples, [len(x)]])
+        onset_boundaries = numpy.concatenate([onset_samples, [len(x)]])
 
         onset_times = librosa.samples_to_time(onset_boundaries, sr=sr)
 

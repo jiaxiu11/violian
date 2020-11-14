@@ -1,5 +1,9 @@
 <template lang="pug">
+  
   v-card.mx-10.my-10(class="commentCard")
+      v-row(justify="center")
+        h1 {{course.name}}, {{lesson.name}}
+        
       v-card-title Click on a note in student's recording to leave comment
       v-divider
       v-card-text(class="commentCardScores")

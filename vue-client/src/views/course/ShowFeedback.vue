@@ -4,6 +4,7 @@
       v-row
         v-col
           h1 Feedback
+          h2 {{course.name}}, {{lesson.name}}
 
       v-row
         v-col

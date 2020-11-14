@@ -78,27 +78,6 @@ export default {
     isTutor: null,
     sortedRecordings: [],
     notifications: 0,
-    // recordings2:[
-    //   {
-    //     recording_id: '1',
-    //     updated_at: '11/12/2020 11:12',
-    //     course_name: 'Course AAA',
-    //     course_id: '1',
-    //     lesson_id: '1',
-    //     student_name: 'Student',
-    //     tutor_name: 'Tutor'
-    //   },
-    //   {
-    //     recording_id: '2',
-    //     updated_at: '11/12/2020 11:12',
-    //     course_name: 'Course BBB',
-    //     course_id: '2',
-    //     lesson_id: '2',
-    //     student_name: 'Student',
-    //     tutor_name: 'Tutor'
-    //   },
-    // ],
-    
     }
   },
 
@@ -107,14 +86,6 @@ export default {
       const localTime = new Date(item.updated_at).toLocaleString("en-US", {timeZone: "Asia/Singapore"});
       const time = moment(localTime).calendar()
       return time;
-    },
-
-    getMessage(item) {
-      if (this.isTutor) {
-        return this.truncateString(`${item.course_name} has a new submission from ${item.student_name}`);
-      } else {
-        return this.truncateString(`${item.course_name} has new comments from ${item.tutor_name}`);
-      }
     },
 
     redirect(item) {
