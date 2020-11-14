@@ -44,8 +44,8 @@
   - POST `/recording/update-notes?rid= { transcription, overallComment }` - `{ recording: [<recordingObj>] }`
   - POST `/recording/mark-commented?rid=` - `{ recording: [<recordingObj>] }`
   - POST `/recording/mark-read?rid=` - `{ recording: [<recordingObj>] }`
-  - GET `/recording/get-uncommented-recordings` - `{ recordings: [{ recording_id, updated_at, exercise_id, lesson_id, course_id, course_name, student_name, tutor_name }]}`
-  - GET `/recording/get-unread-comments` - `{ recordings: [{ recording_id, updated_at, exercise_id, lesson_id, course_id, course_name, student_name, tutor_name }]}`
+  - GET `/recording/get-uncommented-recordings` - `{ recordings: [{ recording_id, updated_at, exercise_id, lesson_id, course_id, course_name, student_name, tutor_name, is_commented, is_read }]}`
+  - GET `/recording/get-unread-comments` - `{ recordings: [{ recording_id, updated_at, exercise_id, lesson_id, course_id, course_name, student_name, tutor_name, is_commented, is_read }]}`
 
 ## subscriptions for student and course
 - POST `/subscribe/new { studentId, courseId }` - `{ data: ok }`

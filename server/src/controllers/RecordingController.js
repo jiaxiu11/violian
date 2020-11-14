@@ -367,6 +367,8 @@ module.exports = {
         },
         raw: true,
         attributes: [
+          ['isCommented', 'is_commented'],
+          ['isRead', 'is_read'],
           ['id', 'recording_id'],
           ['updatedAt', 'updated_at'],
           [sequelize.col('exercise.id'), 'exercise_id'],
@@ -427,6 +429,8 @@ module.exports = {
         },
         raw: true,
         attributes: [
+          ['isCommented', 'is_commented'],
+          ['isRead', 'is_read'],
           ['id', 'recording_id'],
           ['updatedAt', 'updated_at'],
           [sequelize.col('exercise.id'), 'exercise_id'],
