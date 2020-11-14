@@ -5,7 +5,8 @@
     max-width="700"
     
     v-if="notifications==0"
-  ><v-row justify="center">
+  >
+    <v-row justify="center">
       <h1>No {{isTutor?'submissions':'notifications'}} found</h1>
     </v-row>
   </v-card>

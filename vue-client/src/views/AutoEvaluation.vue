@@ -12,6 +12,7 @@
           :onClickNote="onClickNote"
           :clickedNoteOnset="selectedRowNum !== null && selectedIndex !== null ? notesByRow[selectedRowNum-1][selectedIndex].onset : null"
           :shouldIndicateNoteClicked="true"
+          :scoreFocused="scoreFocused"
         )
         v-row(v-if="selectedIndex !== null" justify="center" :style="{position:'absolute',left:commentButtonX+'px',top:commentButtonY+'px'}")
           v-dialog(v-model="commentDialog" max-width="600px")
@@ -33,6 +34,8 @@
                         :disabled="selectedIndex == null"
                         @change="onCommentChange"
                         v-model="comment"
+                        @focus="scoreFocused = false"
+                        @blur="scoreFocused = true"
                         )
               v-card-actions
                 v-spacer
@@ -41,7 +44,7 @@
         v-divider
         div.mx-5.mt-5
           span.text-h6 General comment on student's practice
-          v-textarea.mt-3(label="General Comment" auto-grow outlined v-model="generalComment")
+          v-textarea.mt-3(label="General Comment" auto-grow outlined v-model="generalComment" @focus="scoreFocused = false" @blur="scoreFocused = true")
           v-btn.mb-3(@click="onGeneralCommentChange") Save general comment
         v-divider
       v-card-actions.justify-center
@@ -178,7 +181,10 @@ export default {
       commentButtonY: 0,
       commentDialog: false,
       comment: null,
-      generalComment: null
+      generalComment: null,
+
+      // for pressing space to play
+      scoreFocused: true
     };
   },
   created: async function() {

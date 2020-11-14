@@ -5,6 +5,22 @@
     v-row.bpm-control.pt-2(:id="`slider`" v-show="!hide")
       v-icon(color="white" large) $vuetify.icons.custom_bpm
       v-slider.pb-2(min="20" max="180" vertical color="white" track-color="rgba(115, 133, 159, 0.5)" thumb-label="always" v-model="playbackBpm")
+
+      img(
+        :src="require('../../assets/tick.png')" 
+        style=`
+          position:absolute; 
+          top:0;
+          left:0;
+          transform-origin: top left;
+          will-change: transform;
+          z-index: 2;
+          cursor: pointer;
+          `
+        height="92"
+        :style="{ transform: `translate3d(${transformX}px, 0px, 0px)`, opacity: '0.8' }"
+        id="tick"
+      )
 </template>
 
 <script>
@@ -29,6 +45,7 @@ export default {
       useScore: false,
       useXml: false,
       notesInBars: null,
+      notesInRows: null,
       playbackBpm: 0,
       videoHandler: null,
 
@@ -39,143 +56,96 @@ export default {
       timePerBar: 0,
       demoStartTime: 0,
       demoEndTime: null,
-      currentDisplayedBar: 0,
+      activeRow: 0,
 
       // osmd renderer
       videoOsmd: null,
       from: 1,
       to: 2,
+
+      // green tick
+      transformX: 0,
+      notePositions: null,
+      noteOnsetDurations: null,
+      activeNote: 0,
+      animationFrame: null,
+      canvasWidth: 0
     }
   },
 
   methods: {
-    timeUpdated () {
-      let currTime = this.player.currentTime()
-      let offset = currTime - this.demoStartTime
-      let currBar = Math.floor(offset / this.timePerTwoBars)
-      if (currBar != this.currentDisplayedBar) {
-        if (currBar >= 0 && currBar < Math.floor(this.numberOfBars / 2)) {
-          this.currentDisplayedBar = currBar
-          this.videoHandler.importNotes(this.notesInBars[currBar * 2].concat(this.notesInBars[currBar * 2 + 1]), this.timeSignature)
-        } else if (currBar < 0 && this.currentDisplayedBar != 0) {
-          this.currentDisplayedBar = 0
-          this.videoHandler.importNotes(this.notesInBars[0].concat(this.notesInBars[1]), this.timeSignature)
-        } else if (currBar > Math.floor(this.numberOfBars / 2)) {
-          if (this.numberOfBars < 2) {
-            this.currentDisplayedBar = 0
-            this.videoHandler.importNotes(this.notesInBars[0].concat(this.notesInBars[1]), this.timeSignature)
+    play () {
+      let animate = () => {
+
+        let currTime = this.player.currentTime()
+        let offset = currTime - this.demoStartTime
+        if (offset >= 0) {
+          let currRow = Math.floor(offset / this.timePerTwoBars)
+          currTime -= 0.1
+          if (currRow != this.activeRow) {
+            if (currRow < 0) {
+              this.activeRow = 0
+              this.videoHandler.importNotes(this.notesInRows[0], this.timeSignature)
+              this.noteOnsetDurations = vexUI.notesToOnsetDuration(this.notesInRows[0], this.timeSignature, this.bpm, currRow, 2)
+            } else if (currRow < this.notesInRows.length) {
+              this.activeRow = currRow
+              this.videoHandler.importNotes(this.notesInRows[currRow], this.timeSignature)
+              this.noteOnsetDurations = vexUI.notesToOnsetDuration(this.notesInRows[currRow], this.timeSignature, this.bpm, currRow, 2)
+            } else {
+              this.activeRow = this.notesInRows.length - 1
+              this.videoHandler.importNotes(this.notesInRows[this.notesInRows.length - 1], this.timeSignature)
+              this.noteOnsetDurations = vexUI.notesToOnsetDuration(this.notesInRows[this.notesInRows.length - 1], this.timeSignature, this.bpm, currRow, 2)
+            }
+
+            this.notePositions = this.videoHandler.getNotePositions().flat()
+            this.transformX = this.notePositions[0].x
+            this.activeNote = 0
           } else {
-            this.currentDisplayedBar = Math.floor(this.numberOfBars / 2)
-            this.videoHandler.importNotes(this.notesInBars[this.numberOfBars - 1].concat(this.notesInBars[this.numberOfBars - 1]), this.timeSignature)
+            let currNoteOnsetDuration = this.noteOnsetDurations[this.activeNote]
+
+            if (currTime < currNoteOnsetDuration.onset + currNoteOnsetDuration.duration) {
+              // move within this note
+              let timeFraction = (currTime - currNoteOnsetDuration.onset) / currNoteOnsetDuration.duration;
+              if (timeFraction < 0)
+                timeFraction = 0
+              if (this.activeNote == this.notesInRows[this.activeRow].length - 1) {
+                this.transformX = this.notePositions[this.activeNote].x + parseFloat((this.canvasWidth - 20 - this.notePositions[this.activeNote].x) * timeFraction)
+              } else {
+                this.transformX = (this.notePositions[this.activeNote].x + parseFloat((this.notePositions[this.activeNote + 1].x - this.notePositions[this.activeNote].x) * timeFraction))
+              }
+            } else {
+              // move to next note, if needed move to next row
+              this.activeNote += 1
+              // this.player.pause()
+              // this.pause()
+            }
           }
+
+          this.animationFrame = requestAnimationFrame(animate);
         }
       }
+
+      this.animationFrame = requestAnimationFrame(animate);
     },
 
-    async timeUpdatedOsmd () {
-      let currTime = this.player.currentTime()
-      let offset = currTime - this.demoStartTime
-      let currBar = Math.floor(offset / this.timePerTwoBars)
-      if (currBar != this.currentDisplayedBar) {
-        if (currBar >= 0 && currBar < Math.floor(this.numberOfBars / 2)) {
-          console.log(currBar)
-          this.videoOsmd.setOptions({
-            drawFromMeasureNumber: (currBar * 2) + 1,
-            drawUpToMeasureNumber: (currBar * 2) + 2
-          })
-          this.currentDisplayedBar = currBar
-          await this.videoOsmd.render()
-        } else if (currBar < 0 && this.currentDisplayedBar != 0) {
-          console.log(currBar)
-          this.videoOsmd.setOptions({
-            drawFromMeasureNumber: 1,
-            drawUpToMeasureNumber: 2
-          })
-          this.currentDisplayedBar = 0
-          await this.videoOsmd.render()
-        } else if (currBar > Math.floor(this.numberOfBars / 2)) {
-          console.log(currBar, 'from third clause')
-          if (this.numberOfBars < 2) {
-            this.videoOsmd.setOptions({
-              drawFromMeasureNumber: 0,
-              drawUpToMeasureNumber: 0
-            })
-            this.currentDisplayedBar = 0
-          } else {
-            this.videoOsmd.setOptions({
-              drawFromMeasureNumber: this.numberOfBars - 1,
-              drawUpToMeasureNumber: this.numberOfBars
-            })
-            this.currentDisplayedBar = Math.floor((currTime - this.demoStartTime) / this.timePerTwoBars)
-          }
-          await this.videoOsmd.render()
-        }
-      }
-    },
-
-    async drawOsmdScores () {
-      // video osmd
-      var background = document.createElement("div")
-      background.setAttribute('id', `video-overlay-background`)
-      background.style.position = "absolute";
-      background.style.background = "#FAFAFA";
-      background.style.top = "0";
-      background.style.left = "0";
-      background.style.right = "0";
-      background.style.height = "130px";
-      background.style.overflow = "hidden"
-
-      var scoreWrapper = document.createElement("div")
-      scoreWrapper.setAttribute('id', `video-osmd-wrapper`)
-      scoreWrapper.style.position = "absolute";
-      scoreWrapper.style.background = "#FAFAFA";
-      scoreWrapper.style.top = "0";
-      scoreWrapper.style.left = "0";
-      scoreWrapper.style.right = "0";
-
-      var score = document.createElement('div')
-      background.appendChild(scoreWrapper)
-      scoreWrapper.appendChild(score)
-      document.getElementById(`video`).appendChild(background)
-
-      this.videoOsmd = new OpenSheetMusicDisplay(
-        score, 
-        {
-          drawFromMeasureNumber: this.from,
-          drawUpToMeasureNumber: this.to,
-          drawComposer: false,
-          drawTitle: false,
-          renderSingleHorizontalStaffline: true,
-          drawPartNames: false,
-          autoResize: false,
-          drawMetronomeMarks: false,
-          backend: 'Canvas',
-          drawingParameters: 'compacttight'
-        }
-      )
-      
-      await this.videoOsmd.load(this.exercise.musicXmlUrl)
-      await this.$nextTick()
-      this.videoOsmd.zoom = 1.2
-      // this.videoOsmd.setCustomPageFormat(1, .3)
-      // await this.videoOsmd.preCalculate() 
-      // score.style.top = `${(this.videoOsmd.graphic.musicPages[0].boundingBox.borderMarginTop + this.videoOsmd.graphic.musicPages[0].boundingBox.absolutePosition.y) * 10 * -1}px`
-      // console.log('top', score.style.top)
-      await this.videoOsmd.render()
-      console.log(this.videoOsmd.graphic)
-      console.log(this.videoOsmd.graphic.music)
-      // console.log(this.videoOsmd.graphic.musicPages[0].musicSystems)
-      // console.log(this.videoOsmd)
+    pause() {
+      cancelAnimationFrame(this.animationFrame)
     },
 
     drawScores () {
       var wrapper = document.createElement("div")
+      var tick = document.getElementById('tick')
+      tick.parentNode.removeChild(tick)
+      wrapper.appendChild(tick)
+
       wrapper.setAttribute('id', `video-vexflow-wrapper`)
       wrapper.style.position = "absolute";
       wrapper.style.background = "#FAFAFA";
       wrapper.style.top = "0";
       wrapper.style.left = "0";
       wrapper.style.right = "0";
+
+      this.canvasWidth = this.$refs.videoPlayer.offsetWidth
       this.videoHandler = new vexUI.Handler(`video-vexflow-wrapper`, {
         canEdit: false,
         numberOfStaves: 2,
@@ -184,14 +154,30 @@ export default {
         keySignature: this.keySignature,
         canvasProperties: {
           id: `video-vexflow-wrapper` + "-canvas",
-          width: this.$refs.videoPlayer.offsetWidth,
+          width: this.canvasWidth,
           height: 80 * vexUI.scale,
           tabindex: 1
         }
       }, wrapper).init();
       
       this.notesInBars = vexUI.notesToBars(this.melody, this.timeSignature)
+      let notesInRows = []
+      for (let i = 0; i < this.numberOfBars; i++) {
+        if (i % 2 == 1) {
+          notesInRows.push(this.notesInBars[i - 1].concat(this.notesInBars[i]))
+        } else {
+          if (i == this.numberOfBars - 1) {
+            notesInRows.push(this.notesInBars[i])
+          }
+        }
+      }
+      this.notesInRows = notesInRows
       this.videoHandler.importNotes(this.notesInBars[0].concat(this.notesInBars[1])  , this.timeSignature)
+
+      this.notePositions = this.videoHandler.getNotePositions().flat()
+      this.transformX = this.notePositions[0].x
+
+      this.noteOnsetDurations = vexUI.notesToOnsetDuration(this.notesInRows[0], this.timeSignature, this.bpm, 0, 2)
 
       document.getElementById(`video`).appendChild(wrapper)
     }
@@ -254,6 +240,13 @@ export default {
           })
           player.on('play', () => {
             this.hide = false
+            this.play()
+          })
+          player.on('pause', () => {
+            this.pause()
+          })
+          player.on('ended', () => {
+            this.pause()
           })
           player.on('firstplay', () => {
             this.hide = false
@@ -261,15 +254,6 @@ export default {
           player.on('ratechange', () => {
             this.playbackBpm = this.bpm * this.player.playbackRate()
           })
-          if (this.exercise.useXml) {
-            player.on('timeupdate', (e) => {
-              this.timeUpdatedOsmd(e)
-            })
-          } else {
-            player.on('timeupdate', (e) => {
-              this.timeUpdated(e)
-            })
-          }
         }
     })
 
@@ -282,18 +266,13 @@ export default {
       this.bpm = parseInt(exercise.bpm)
       this.playbackBpm = this.bpm
       this.demoStartTime = exercise.demoStartTime
-      if (exercise.useXml) {
-        await this.drawOsmdScores()
-        let timeSignature = this.videoOsmd.sheet.sourceMeasures[0].activeTimeSignature
-        this.timeSignature = `${timeSignature.numerator}/${timeSignature.denominator}`
-        this.numberOfBars = this.videoOsmd.sheet.sourceMeasures.length
-      } else {
-        this.melody = exercise.melody.split('-')
-        this.timeSignature = exercise.timeSignature
-        this.keySignature = exercise.keySignature
-        this.numberOfBars = parseInt(exercise.numberOfBars)
-        this.drawScores()
-      }
+
+      this.melody = exercise.melody.split('-')
+      this.timeSignature = exercise.timeSignature
+      this.keySignature = exercise.keySignature
+      this.numberOfBars = parseInt(exercise.numberOfBars)
+      this.drawScores()
+
       this.timePerBar = ((parseInt(this.timeSignature.split('/')[0]) / this.bpm) * 60)
       this.timePerTwoBars = this.timePerBar * 2
       this.demoEndTime = this.demoStartTime + (this.timePerBar * this.numberOfBars)

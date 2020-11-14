@@ -2,8 +2,8 @@
   div(v-if="course && lesson")
     v-container
       v-row
-        v-col
-          h1 Feedback
+        v-col.pt-10(cols="12").text-center
+          h1 {{ course.name }}
 
       v-row
         v-col
@@ -22,7 +22,7 @@
 
       v-row
         v-col
-          score-feedback(v-if="currEx && currRecording" :currEx="currEx" :isShowFeedback="true" :recording="currRecording")
+          score-feedback(v-if="currEx && currRecording" :currEx="currEx" :isShowFeedback="true" :recording="currRecording" :scoreFocused="true")
 
 </template>
 
