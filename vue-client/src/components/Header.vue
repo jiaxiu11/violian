@@ -16,12 +16,9 @@
       v-toolbar-items(v-if="$store.state.isUserLoggedIn && !minimiseNav")
         v-btn(depressed to="/" color="white") Home
         v-btn(depressed to="/course/index" color="white") My Courses
-        v-btn(depressed to="/notifications" color="white" v-if="is_student && notifications > 0") Notifications
+        v-btn(depressed to="/submissions" color="white" v-if="notifications > 0") Submissions
           #notification {{ notifications }}
-        v-btn(depressed to="/notifications" color="white" v-else-if="is_student") Notifications
-        v-btn(depressed to="/notifications" color="white" v-else-if="!is_student && notifications > 0") Submissions
-          #notification {{ notifications }}
-        v-btn(depressed to="/notifications" color="white" v-else) Submissions
+        v-btn(depressed to="/submissions" color="white" v-else) Submissions
         v-btn(depressed @click="logout" color="white") Log Out
 
       v-app-bar-nav-icon(@click="drawer = true" v-if="minimiseNav")
