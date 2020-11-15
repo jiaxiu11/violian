@@ -4,6 +4,8 @@
       v-row
         v-col.pt-10(cols="12").text-center
           h1 {{ course.name }}
+          h4(v-if="currRecording")  {{ currRecording.audioFilename.slice(0, -4) }} 
+          h4(v-if="currRecording") ({{ currRecording.isCommented ? 'Graded' : 'Pending tutor\'s grading, what you see is automatically transcribed result' }})
 
       v-row
         v-col
@@ -13,13 +15,28 @@
                 v-icon(right dark) mdi-menu-down
             v-list
               v-list-item(v-for='(recording, index) in recordings' :key='index' @click="updateFeedback($event, index)")
-                v-list-item-title {{ recording.audioFilename }}
+                v-list-item-title {{ recording.audioFilename }} ({{ recording.isCommented ? 'Graded' : 'Pending' }})
+                v-list-item-icon(v-if="recording.isCommented")
+                  v-icon(color="green") mdi-check-decagram
+                v-list-item-icon(v-else)
+                  v-icon(color="#ff9800") mdi-clock-alert-outline
 
       v-row(v-if="currRecording&&currRecording.overallComment")
         v-col.ml-3
             h4 Overall comment from tutor:
             div.ml-5 {{currRecording.overallComment}}
-
+      v-row.align-center.ml-3(v-if="shouldShowCommentTip(currRecording)")
+        h4 Hover over orange notes on your recording to view tutor's comment!
+        v-tooltip.ml-2(right color="#FFFFFF")
+          template(v-slot:activator="{ on, attrs }")
+            v-btn(icon color="orange" v-bind="attrs" v-on="on")
+              v-icon mdi-information-outline
+          div
+            v-card
+              v-card-title Hover over commented note
+              v-card-subtitle Example recording with commented note
+              v-card-text.justify-center
+                v-img(max-height="240" max-width="300" :src="require('../../assets/orange-note-example.png')")
       v-row
         v-col
           score-feedback(v-if="currEx && currRecording" :currEx="currEx" :isShowFeedback="true" :recording="currRecording" :scoreFocused="true")
@@ -32,7 +49,6 @@ import EvaluationLineGraph from "../EvaluationLineGraph";
 import RecordingService from "@/services/RecordingService"
 import ScoreAndFeedback from "@/components/Course/ScoreAndFeedback"
 import CourseService from "@/services/CourseService"
-
 export default {
   name: 'ShowFeedback',
   components: {
@@ -60,6 +76,15 @@ export default {
 
     updateFeedback (event, idx) {
       this.currRecording = this.recordings[idx]
+    },
+
+    shouldShowCommentTip(currRecording) {
+      if(!(currRecording && currRecording.isCommented)) {
+          return false
+      }
+      let notes = JSON.parse(currRecording.transcription)
+      let commentedNotes = notes.filter(note=>note.comment)
+      return commentedNotes.length > 0
     }
   },
 
