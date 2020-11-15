@@ -42,13 +42,13 @@
           :key="index"
         >
           <v-list-item-icon class="listItemIcon" v-if="(!isTutor && !item.is_read && item.is_commented) || (isTutor && !item.is_commented) ">
-            <v-icon size="35">mdi-email-alert</v-icon>
+            <v-icon size="35" color="red">mdi-email-alert</v-icon>
           </v-list-item-icon>
           <v-list-item-icon class="listItemIcon" v-else-if="(!isTutor && item.is_read) || (isTutor && item.is_commented)">
-            <v-icon size="35">mdi-email-open</v-icon>
+            <v-icon size="35" color="green">mdi-check-decagram</v-icon>
           </v-list-item-icon>
           <v-list-item-icon class="listItemIcon" v-else>
-            <v-icon size="35">mdi-progress-clock</v-icon>
+            <v-icon size="35" color="#ff9800">mdi-clock-alert-outline</v-icon>
           </v-list-item-icon>
 
           <v-list-item-content>
@@ -82,7 +82,7 @@
             </div>
 
             <v-btn disabled @click="redirect(item)" v-if="!isTutor && !item.is_commented">
-              Not Graded
+              Pending
               <v-icon right color="green lighten-1">mdi-eye</v-icon>
             </v-btn>
           </v-list-item-action>
