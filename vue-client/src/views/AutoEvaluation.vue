@@ -73,7 +73,7 @@ export default {
       await RecordingService.markAsCommented(recordingId);
       this.$store.dispatch("clearOneNotification");
       alert("Your comment is sent to student!");
-      this.$router.push("/notifications");
+      this.$router.push("/submissions");
     },
 
     onLineGraphScroll() {
