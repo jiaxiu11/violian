@@ -93,7 +93,8 @@ export default {
     "isNewFeedback",
     "isShowFeedback",
     "isNewRecording",
-    "bpm"
+    "bpm",
+    "scoreFocused"
     ],
   components: {
     'line-graph': EvaluationLineGraph
@@ -152,7 +153,8 @@ export default {
     },
 
     tutorFocused: function (val) {
-      this.pauseTutorAudio()
+      if (this.isShowFeedback)
+        this.pauseTutorAudio()
       this.pauseStudentAudio()
     },
 
@@ -161,7 +163,7 @@ export default {
         console.log(val)
         this.noteOnsetDurations = []
         for (let i = 0; i < this.scoreRows.length; i++)
-          this.noteOnsetDurations.push(vexUI.notesToOnsetDuration(this.scoreRows[i], this.currEx.timeSignature, val, i))
+          this.noteOnsetDurations.push(vexUI.notesToOnsetDuration(this.scoreRows[i], this.currEx.timeSignature, val, i, 4))
       }
     }
   },
@@ -194,7 +196,7 @@ export default {
           this.handlers[i].canvas.style.cursor = 'pointer'
         }
         this.notePositions.push(this.handlers[i].getNotePositions().filter(x => x.length > 0).flat())
-        this.noteOnsetDurations.push(vexUI.notesToOnsetDuration(this.scoreRows[i], this.currEx.timeSignature, this.currEx.bpm, i))
+        this.noteOnsetDurations.push(vexUI.notesToOnsetDuration(this.scoreRows[i], this.currEx.timeSignature, this.currEx.bpm, i, 4))
       }
     
       // set up and append the tick to the score
@@ -435,10 +437,12 @@ export default {
 
     keyPressed (e) {
       if (e.code == "Space") {
-        if (this.playing) {
-          this.pause()
-        } else {
-          this.play()
+        if (this.scoreFocused) {
+          if (this.playing) {
+            this.pause()
+          } else {
+            this.play()
+          }
         }
       }
     }
@@ -465,13 +469,13 @@ export default {
     }
 
     if (!this.isNewRecording) {
-      window.addEventListener("keyup", this.keyPressed)
+      document.addEventListener("keyup", this.keyPressed)
     }
   },
 
   destroyed: function () {
     if (!this.isNewRecording) {
-      window.removeEventListener("keyup", this.keyPressed)
+      document.removeEventListener("keyup", this.keyPressed)
     }
   }
 }

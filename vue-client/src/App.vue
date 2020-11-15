@@ -18,9 +18,11 @@ export default {
   },
 
   mounted: function () {
-    // window.addEventListener('resize', () => {
-    //   console.log(this.$vuetify.breakpoint.name)
-    // })
+    window.addEventListener('keydown', function(e) {
+      if(e.keyCode == 32 && e.target == document.body) {
+        e.preventDefault();
+      }
+    });
   }
 };
 </script>
