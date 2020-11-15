@@ -4,7 +4,7 @@
     style="margin-top:30px;"
     max-width="700"
     
-    v-if="sortedRecordings.length==0"><v-row justify="center">
+    v-if="Object.keys(this.sortedRecordings).length==0"><v-row justify="center">
       <h1>No submissions found</h1>
     </v-row>
   </v-card>
@@ -150,6 +150,7 @@ export default {
         }, {});
       }
       this.sortedRecordings = groupBy(this.recordings, 'course_id')
+      // console.log(this.sortedRecordings, Object.keys(this.sortedRecordings).length)
     }
   }
 </script>
