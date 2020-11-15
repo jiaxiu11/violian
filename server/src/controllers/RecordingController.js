@@ -362,7 +362,7 @@ module.exports = {
       const user = req.user;
       const recordings = await Recording.findAll({
         where: {
-          isCommented: 0,
+          // isCommented: 0,
           '$exercise.lesson.course.tutor.id$': user.id,
         },
         raw: true,
@@ -424,8 +424,8 @@ module.exports = {
       const recordings = await Recording.findAll({
         where: {
           UserId: user.id,
-          isCommented: 1,
-          isRead: 0,
+          // isCommented: 1,
+          // isRead: 0,
         },
         raw: true,
         attributes: [
@@ -435,6 +435,7 @@ module.exports = {
           ['updatedAt', 'updated_at'],
           [sequelize.col('exercise.id'), 'exercise_id'],
           [sequelize.col('exercise.lesson.id'), 'lesson_id'],
+          [sequelize.col('exercise.lesson.name'), 'lesson_name'],
           [sequelize.col('exercise.lesson.course.id'), 'course_id'],
           [sequelize.col('exercise.lesson.course.name'), 'course_name'],
           [sequelize.col('user.username'), 'student_name'],

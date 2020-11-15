@@ -194,6 +194,7 @@ export default {
           let recording = (await RecordingService.create(formData)).data.recording
           let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
           alert('Success!')
+          this.$router.push('/submissions')
         } catch (e) {
           console.log(e)
         } finally {

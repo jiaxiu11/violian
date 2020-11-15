@@ -123,7 +123,7 @@ const routes = [
     component: Video
   },
   {
-    path: '/notifications',
+    path: '/submissions',
     component: Notification
   },
   {
