@@ -2186,10 +2186,10 @@ Vex.UI.notesToBars = function (notes, timeSignature) {
 }
 
 // convert a flat array of notes into arrays of arrays of notes, each inner array represents one measure in music score
-Vex.UI.notesToOnsetDuration = function (notes, timeSignature, bpm, rowNum) {
+Vex.UI.notesToOnsetDuration = function (notes, timeSignature, bpm, rowNum, stavesPerRow) {
 	if (notes && timeSignature && bpm) {
 		var result = []
-    var time = parseInt(timeSignature.split('/')[0]) * 4 * 60 / bpm * rowNum;
+    var time = parseInt(timeSignature.split('/')[0]) * stavesPerRow * 60 / bpm * rowNum;
     var beatValue = parseInt(timeSignature.split('/')[1])
 		notes.forEach(element => {
 			var temp = element.split("/")[2];

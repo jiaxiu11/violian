@@ -2,8 +2,10 @@
   div(v-if="course && lesson")
     v-container
       v-row
-        v-col
-          h1 {{course.name}} - Feedback
+        v-col.pt-10(cols="12").text-center
+          h1 {{ course.name }}
+          h4(v-if="currRecording")  {{ currRecording.audioFilename.slice(0, -4) }} 
+          h4(v-if="currRecording") ({{ currRecording.isCommented ? 'Graded' : 'Pending tutor\'s grading, what you see is automatically transcribed result' }})
 
       v-row
         v-col
@@ -13,7 +15,11 @@
                 v-icon(right dark) mdi-menu-down
             v-list
               v-list-item(v-for='(recording, index) in recordings' :key='index' @click="updateFeedback($event, index)")
-                v-list-item-title {{ recording.audioFilename }}
+                v-list-item-title {{ recording.audioFilename }} ({{ recording.isCommented ? 'Graded' : 'Pending' }})
+                v-list-item-icon(v-if="recording.isCommented")
+                  v-icon(color="green") mdi-check-decagram
+                v-list-item-icon(v-else)
+                  v-icon(color="#ff9800") mdi-clock-alert-outline
 
       v-row(v-if="currRecording&&currRecording.overallComment")
         v-col.ml-3
@@ -33,7 +39,7 @@
                 v-img(max-height="240" max-width="300" :src="require('../../assets/orange-note-example.png')")
       v-row
         v-col
-          score-feedback(v-if="currEx && currRecording" :currEx="currEx" :isShowFeedback="true" :recording="currRecording")
+          score-feedback(v-if="currEx && currRecording" :currEx="currEx" :isShowFeedback="true" :recording="currRecording" :scoreFocused="true")
 
 </template>
 

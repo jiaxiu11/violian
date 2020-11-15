@@ -56,7 +56,7 @@
                 </v-list-item-action>
 
                 <v-list-item-content class="py-0">
-                  <v-list-item-title @click="changeFileName(index)">
+                  <v-list-item-title>
                     {{ recordingData[0] }}  (bpm: {{ recordingData[3] }})
                   </v-list-item-title>
                 </v-list-item-content>
@@ -482,14 +482,6 @@ export default {
 
     onError(err){
       console.log(err)
-    },
-    changeFileName(index) {
-      const existingName = this.recordingsData[index][0];
-      const newClipName = prompt('Enter a new name for your sound clip?');
-
-      if(newClipName !== null && newClipName.trim().length > 0) {
-        this.recordingsData[index][0] = newClipName;
-      } 
     },
 
   }
