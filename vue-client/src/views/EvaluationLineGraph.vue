@@ -161,7 +161,7 @@ export default {
       return (60 / this.bpm) * this.timeSignature * this.barsPerRow;
     },
     getNumberFromMusicNote(noteNumber) {
-      let octave = noteNumber[1] - "0";
+      let octave = noteNumber[noteNumber.length - 1] - "0";
       let note = noteNumber[0].charCodeAt(0) - "C".charCodeAt(0);
       if (note < 0) {
         note = note + 8;
@@ -243,7 +243,7 @@ export default {
       return notes.map(note => note.onset + note.duration / 2);
     },
     getBarYValsForNotes(notes) {
-      return Array(notes.length).fill(0.16);
+      return Array(notes.length).fill(0.3);
     },
     getBarBaseValsForNotes(notes) {
       return notes.map(note => {
@@ -315,10 +315,10 @@ export default {
             }
           },
           yaxis: {
-            range: [0, 3.3],
+            range: [0, 7.3],
             fixedrange: true,
-            tickvals: [0, 1, 2, 3],
-            ticktext: ["C3", "C4", "C5", "C6"],
+            tickvals: [0, 1, 2, 3, 4, 5, 6, 7],
+            ticktext: ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"],
             tickfont: {
               family: "Roboto",
               size: 10,
@@ -357,8 +357,8 @@ export default {
       showTooltip: false,
       tooltipLeft: 0,
       tooltipTop: 0,
-      minNoteNumber: "C3",
-      maxNoteNumber: "C6",
+      minNoteNumber: "C1",
+      maxNoteNumber: "C8",
       timeSignature: 4,
       barsPerRow: 4,
       secondsPerRow: 0,
