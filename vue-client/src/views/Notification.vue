@@ -4,10 +4,8 @@
     style="margin-top:30px;"
     max-width="700"
     
-    v-if="notifications==0"
-  >
-    <v-row justify="center">
-      <h1>No {{isTutor?'submissions':'notifications'}} found</h1>
+    v-if="Object.keys(this.sortedRecordings).length==0"><v-row justify="center">
+      <h1>No submissions found</h1>
     </v-row>
   </v-card>
   <v-card
@@ -26,7 +24,8 @@
       <v-spacer></v-spacer>
     </v-toolbar>
 
-    <v-list>
+    <v-list
+      two-line>
       <v-list-group
         v-for="(recordings, key) in sortedRecordings"
         :key="key"
@@ -42,8 +41,27 @@
           v-for="(item, index) in recordings"
           :key="index"
         >
+          <v-list-item-icon class="listItemIcon" v-if="(!isTutor && !item.is_read && item.is_commented) || (isTutor && !item.is_commented) ">
+            <v-icon size="35">mdi-email-alert</v-icon>
+          </v-list-item-icon>
+          <v-list-item-icon class="listItemIcon" v-else-if="(!isTutor && item.is_read) || (isTutor && item.is_commented)">
+            <v-icon size="35">mdi-email-open</v-icon>
+          </v-list-item-icon>
+          <v-list-item-icon class="listItemIcon" v-else>
+            <v-icon size="35">mdi-progress-clock</v-icon>
+          </v-list-item-icon>
+
           <v-list-item-content>
-            <v-list-item-title v-text="item.student_name"></v-list-item-title>
+            
+            <v-list-item-title v-if="isTutor && item.is_commented" v-text="item.student_name" class="listItemTitle"></v-list-item-title>
+            <v-list-item-title v-else-if="isTutor && !item.is_commented" v-text="item.student_name" class="listItemTitle unread">
+            </v-list-item-title>
+
+            <v-list-item-title v-else-if="!isTutor && !item.is_read" v-text="item.lesson_name" class="listItemTitle unread">
+            </v-list-item-title>
+
+            <v-list-item-title v-else v-text="item.lesson_name" class="listItemTitle"></v-list-item-title>
+
             <v-list-item-subtitle v-text="getTime(item)"></v-list-item-subtitle>
           </v-list-item-content>
           <v-spacer></v-spacer>
@@ -56,8 +74,15 @@
               Delete
               <v-icon right color="red lighten-1">mdi-trash-can</v-icon>
             </v-btn>
-            <v-btn @click="redirect(item)" v-if="!isTutor">
+            <div v-if="!isTutor && item.is_commented">
+            <v-btn @click="redirect(item)" v-if="!isTutor && item.is_commented">
               View
+              <v-icon right color="green lighten-1">mdi-eye</v-icon>
+            </v-btn>
+            </div>
+
+            <v-btn disabled @click="redirect(item)" v-if="!isTutor && !item.is_commented">
+              Not Graded
               <v-icon right color="green lighten-1">mdi-eye</v-icon>
             </v-btn>
           </v-list-item-action>
@@ -79,27 +104,6 @@ export default {
     isTutor: null,
     sortedRecordings: [],
     notifications: 0,
-    // recordings2:[
-    //   {
-    //     recording_id: '1',
-    //     updated_at: '11/12/2020 11:12',
-    //     course_name: 'Course AAA',
-    //     course_id: '1',
-    //     lesson_id: '1',
-    //     student_name: 'Student',
-    //     tutor_name: 'Tutor'
-    //   },
-    //   {
-    //     recording_id: '2',
-    //     updated_at: '11/12/2020 11:12',
-    //     course_name: 'Course BBB',
-    //     course_id: '2',
-    //     lesson_id: '2',
-    //     student_name: 'Student',
-    //     tutor_name: 'Tutor'
-    //   },
-    // ],
-    
     }
   },
 
@@ -110,18 +114,11 @@ export default {
       return time;
     },
 
-    getMessage(item) {
-      if (this.isTutor) {
-        return this.truncateString(`${item.course_name} has a new submission from ${item.student_name}`);
-      } else {
-        return this.truncateString(`${item.course_name} has new comments from ${item.tutor_name}`);
-      }
-    },
-
     redirect(item) {
       if (this.isTutor) {
         window.location.href = (`/feedback/new/${item.course_id}/lesson/${item.lesson_id}/recording/${item.recording_id}`);
       } else {
+        // this.$router.push('/')
         window.location.href = (`/feedback/show/${item.course_id}/lesson/${item.lesson_id}`);
         RecordingService.markAsRead(item.recording_id)
         this.$store.dispatch('clearOneNotification')
@@ -152,8 +149,8 @@ export default {
           return rv;
         }, {});
       }
-      // console.log(this.recordings);
       this.sortedRecordings = groupBy(this.recordings, 'course_id')
+      // console.log(this.sortedRecordings, Object.keys(this.sortedRecordings).length)
     }
   }
 </script>
@@ -162,5 +159,18 @@ export default {
 .courseName {
   font-size: 20px;
   font-weight: bold;
+}
+
+.listItemTitle {
+  font-size: 20px;
+}
+
+.listItemTitle.unread {
+  font-weight: bold;
+}
+
+.listItemIcon {
+  position: relative;
+  top: 10px
 }
 </style>

@@ -436,7 +436,8 @@ export default {
         let recording = (await RecordingService.create(formData)).data.recording
         let feedback = (await RecordingService.getFeedback(recording.id)).data.recording.transcription
         alert('Success!')
-        this.$router.push(`/course/show/${this.courseId}/lesson/${this.lessonId}`)
+        this.$router.push('/submissions')
+        // this.$router.push(`/course/show/${this.courseId}/lesson/${this.lessonId}`)
       } catch (error) {
         console.log(error)
         this.submissionError = true;
