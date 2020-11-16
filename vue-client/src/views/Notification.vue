@@ -81,7 +81,7 @@
             </v-btn>
             </div>
 
-            <v-btn disabled @click="redirect(item)" v-if="!isTutor && !item.is_commented">
+            <v-btn @click="redirect(item)" v-if="!isTutor && !item.is_commented">
               Pending
               <v-icon right color="green lighten-1">mdi-eye</v-icon>
             </v-btn>
