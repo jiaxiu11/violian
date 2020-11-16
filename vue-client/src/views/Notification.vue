@@ -4,7 +4,7 @@
     style="margin-top:30px;"
     max-width="700"
     
-    v-if="Object.keys(this.sortedRecordings).length==0"><v-row justify="center">
+    v-if="notifications==0"><v-row justify="center">
       <h1>No submissions found</h1>
     </v-row>
   </v-card>
