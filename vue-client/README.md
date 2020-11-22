@@ -1,5 +1,5 @@
 # vue-client
-
+This project was migrated from [this repo](https://github.com/jiaxiu11/violian) for the purpose of CS3216 final project code submission. 
 ## Project setup
 ```
 npm install
